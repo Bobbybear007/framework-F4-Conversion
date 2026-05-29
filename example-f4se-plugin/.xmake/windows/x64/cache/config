@@ -1,0 +1,10 @@
+{
+    options = {
+        toolchain = "msvc",
+        plat = "windows"
+    },
+    mtimes = {
+        ["xmake.lua"] = 1780001150
+    },
+    recheck = false
+}

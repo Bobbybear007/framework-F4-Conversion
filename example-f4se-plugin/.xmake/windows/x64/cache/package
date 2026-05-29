@@ -1,0 +1,62 @@
+{
+    spdlog = {
+        __enabled = true,
+        installdir = [[C:\Users\Game\AppData\Local\.xmake\packages\s\spdlog\v1.17.0\d234fb480af04eb287ae1d5a01a2c082]],
+        sysincludedirs = [[C:\Users\Game\AppData\Local\.xmake\packages\s\spdlog\v1.17.0\d234fb480af04eb287ae1d5a01a2c082\include]],
+        __requirestr = "spdlog",
+        version = "v1.17.0",
+        cxxflags = "/utf-8",
+        license = "MIT"
+    },
+    fmt = {
+        installdir = [[C:\Users\Game\AppData\Local\.xmake\packages\f\fmt\12.1.0\12967e010fdb4a75a2fb4d78bf68c8ea]],
+        sysincludedirs = [[C:\Users\Game\AppData\Local\.xmake\packages\f\fmt\12.1.0\12967e010fdb4a75a2fb4d78bf68c8ea\include]],
+        libfiles = [[C:\Users\Game\AppData\Local\.xmake\packages\f\fmt\12.1.0\12967e010fdb4a75a2fb4d78bf68c8ea\lib\fmt.lib]],
+        linkdirs = [[C:\Users\Game\AppData\Local\.xmake\packages\f\fmt\12.1.0\12967e010fdb4a75a2fb4d78bf68c8ea\lib]],
+        cxxflags = "/utf-8",
+        static = true,
+        __requirestr = "fmt",
+        links = "fmt",
+        __enabled = true,
+        version = "12.1.0",
+        envs = {
+            PATH = {
+                [[C:\Users\Game\AppData\Local\.xmake\packages\n\ninja\v1.13.1\fd5a0995dca64146a4f4c4dbff879aad\bin]],
+                [[C:\Users\Game\AppData\Local\.xmake\packages\c\cmake\4.2.3\674adf9609f646bc9f678b5e946b080a\bin]]
+            }
+        },
+        license = "MIT"
+    },
+    boost = {
+        installdir = [[C:\Users\Game\AppData\Local\.xmake\packages\b\boost\1.90.0\92eecc800d9f463eadc9a59009b451cc]],
+        syslinks = {
+            "ntdll",
+            "shell32",
+            "advapi32",
+            "user32",
+            "ws2_32"
+        },
+        defines = "BOOST_ALL_NO_LIB",
+        libfiles = {
+            [[C:\Users\Game\AppData\Local\.xmake\packages\b\boost\1.90.0\92eecc800d9f463eadc9a59009b451cc\lib\libboost_filesystem.lib]],
+            [[C:\Users\Game\AppData\Local\.xmake\packages\b\boost\1.90.0\92eecc800d9f463eadc9a59009b451cc\lib\libboost_atomic.lib]]
+        },
+        __enabled = true,
+        linkdirs = [[C:\Users\Game\AppData\Local\.xmake\packages\b\boost\1.90.0\92eecc800d9f463eadc9a59009b451cc\lib]],
+        static = true,
+        sysincludedirs = [[C:\Users\Game\AppData\Local\.xmake\packages\b\boost\1.90.0\92eecc800d9f463eadc9a59009b451cc\include]],
+        links = {
+            "libboost_filesystem",
+            "libboost_atomic"
+        },
+        __requirestr = "boost",
+        version = "1.90.0",
+        envs = {
+            PATH = {
+                [[C:\Users\Game\AppData\Local\.xmake\packages\n\ninja\v1.13.1\fd5a0995dca64146a4f4c4dbff879aad\bin]],
+                [[C:\Users\Game\AppData\Local\.xmake\packages\c\cmake\4.2.3\674adf9609f646bc9f678b5e946b080a\bin]]
+            }
+        },
+        license = "BSL-1.0"
+    }
+}

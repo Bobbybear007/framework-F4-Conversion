@@ -1,0 +1,10 @@
+{
+    cmdlines = {
+        "xmake f -c -y",
+        "xmake f -y",
+        "xmake f -p windows --toolchain=msvc -y",
+        "xmake build -y",
+        "xmake build -y",
+        "xmake build -y"
+    }
+}

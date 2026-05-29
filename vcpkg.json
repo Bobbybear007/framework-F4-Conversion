@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "dependencies": [
+    "directxtk",
+    "minhook",
+    {
+      "name": "spdlog",
+      "features": ["wchar"]
+    },
+    "fmt",
+    "rsm-mmio",
+    "boost-stl-interfaces",
+    "frozen",
+    "nowide",
+    "robin-hood-hashing",
+    "srell",
+    "xbyak",
+    "args"
+  ]
+}
