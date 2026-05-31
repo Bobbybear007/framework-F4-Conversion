@@ -1,3 +1,16 @@
+# Version 1.5
+
+## Security
+
+* Added a network sandbox applied automatically to all views across all API versions (V1–V4).
+* Outbound network APIs (`fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `Worker`, and related) are blocked in every view before page scripts execute and cannot be overridden by page code.
+* `CreateView` now rejects external URLs (`http://`, `https://`). Only local paths under `Data/PrismaUI_F4/views/` are accepted.
+* `window.open()` and external navigation are blocked.
+* Blocked attempts are logged to `PrismaUI_F4.log`.
+
+No changes to the public API. Plugins built against V1–V4 receive the sandbox automatically with no code changes required.
+
+
 # Version 1.4
 
 docs(prismaui): update API reference, examples, getting-started, view-lifecycle for V4
