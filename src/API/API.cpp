@@ -249,3 +249,21 @@ void PluginAPI::PrismaUIInterface::RegisterTranslations(PrismaView view, const c
 	}
 	PrismaUI::ViewManager::RegisterTranslations(view, pluginName);
 }
+
+void PluginAPI::PrismaUIInterface::BindUIEvent(PrismaView view, const char* functionName,
+                                                PRISMA_UI_API::JSListenerCallback callback) noexcept
+{
+	if (!view || !functionName || !callback) {
+		return;
+	}
+
+	// Wrap the raw callback in AddTask so it always fires on the game thread.
+	// RE:: access is safe directly inside the caller's lambda.
+	auto wrapped = [callback](const std::string& arg) {
+		F4SE::GetTaskInterface()->AddTask([callback, arg]() {
+			callback(arg.c_str());
+		});
+	};
+
+	PrismaUI::Communication::RegisterJSListener(view, functionName, wrapped);
+}

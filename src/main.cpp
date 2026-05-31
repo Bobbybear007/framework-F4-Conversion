@@ -78,6 +78,9 @@ extern "C" DLLEXPORT void* F4SEAPI RequestPluginAPI(const PRISMA_UI_API::Interfa
     case PRISMA_UI_API::InterfaceVersion::V3:
         logger::info("RequestPluginAPI returned V3 interface");
         return static_cast<PRISMA_UI_API::IVPrismaUI3*>(api);
+    case PRISMA_UI_API::InterfaceVersion::V4:
+        logger::info("RequestPluginAPI returned V4 interface");
+        return static_cast<PRISMA_UI_API::IVPrismaUI4*>(api);
     default:
         logger::info("RequestPluginAPI: unsupported interface version");
         return nullptr;

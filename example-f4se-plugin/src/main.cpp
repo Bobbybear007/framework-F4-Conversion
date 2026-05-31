@@ -11,7 +11,7 @@
 #include "PrismaUI_F4_API.h"
 #include "keyhandler/keyhandler.h"
 
-static PRISMA_UI_API::IVPrismaUI3* g_api  = nullptr;
+static PRISMA_UI_API::IVPrismaUI4* g_api  = nullptr;
 static PrismaView                   g_view = 0;
 static bool                         g_visible = false;
 
@@ -34,13 +34,12 @@ static void OnDomReady(PrismaView v)
         g_api->Hide(g_view);
     });
 
-    // Example: JS calls sendDataToF4SE("some string") -> dispatched to game thread
-    g_api->RegisterJSListener(v, "sendDataToF4SE", [](const char* data) {
-        std::string d = data ? data : "";
-        F4SE::GetTaskInterface()->AddTask([d]() {
-            logger::info("Received from JS: {}", d);
-            // RE:: access safe here
-        });
+    // BindUIEvent — game-thread-safe, RE:: access works directly inside the callback.
+    // No AddTask needed. Use this any time you need to touch game state from JS.
+    g_api->BindUIEvent(v, "sendDataToF4SE", [](const char* data) {
+        logger::info("Received from JS: {}", data ? data : "");
+        // RE:: access safe here — already on game thread
+        // auto* player = RE::PlayerCharacter::GetSingleton();
     });
 
     g_api->Invoke(v, "init()");
@@ -76,7 +75,7 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* message)
 
     case F4SE::MessagingInterface::kGameDataReady:
     {
-        g_api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI3>();
+        g_api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI4>();
         if (!g_api) {
             logger::error("PrismaUI_F4 API not found — is PrismaUI_F4.dll installed?");
             return;

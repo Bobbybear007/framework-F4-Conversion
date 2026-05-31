@@ -5,6 +5,12 @@
         "xmake f -p windows --toolchain=msvc -y",
         "xmake build -y",
         "xmake build -y",
-        "xmake build -y"
+        "xmake build -y",
+        "xmake ",
+        [[xmake lua "C:\\Program Files\\xmake\\modules\\private\\utils\\statistics.lua"]],
+        [[xmake lua "C:\\Program Files\\xmake\\actions\\build\\cleaner.lua"]],
+        "xmake ",
+        [[xmake lua "C:\\Program Files\\xmake\\modules\\private\\utils\\statistics.lua"]],
+        [[xmake lua "C:\\Program Files\\xmake\\actions\\build\\cleaner.lua"]]
     }
 }

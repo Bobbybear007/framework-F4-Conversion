@@ -4,7 +4,7 @@
 
 class PluginAPI
 {
-	using LatestInterface = PRISMA_UI_API::IVPrismaUI3;
+	using LatestInterface = PRISMA_UI_API::IVPrismaUI4;
 
 public:
 	class PrismaUIInterface : public LatestInterface
@@ -51,6 +51,11 @@ public:
 		// IVPrismaUI3
 
 		virtual void RegisterTranslations(PrismaView view, const char* pluginName) noexcept override;
+
+		// IVPrismaUI4
+
+		virtual void BindUIEvent(PrismaView view, const char* functionName,
+		                         PRISMA_UI_API::JSListenerCallback callback) noexcept override;
 
 	private:
 		unsigned long apiTID = 0;
