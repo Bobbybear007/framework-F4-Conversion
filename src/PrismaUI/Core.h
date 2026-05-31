@@ -61,6 +61,7 @@ namespace PrismaUI::Core {
         std::atomic<bool> isLoadingFinished = false;
         std::function<void(const PrismaViewId&)> domReadyCallback;
         std::function<void(PrismaViewId, PRISMA_UI_API::ConsoleMessageLevel, const std::string&)> consoleMessageCallback;
+        std::string translationsPluginName;
         int scrollingPixelSize = 28;
         std::atomic<bool> isPaused = false;
         int order = 0;

@@ -609,4 +609,15 @@ namespace PrismaUI::ViewManager {
             logger::warn("RegisterConsoleCallback: View ID [{}] not found.", viewId);
         }
     }
+
+    void RegisterTranslations(const Core::PrismaViewId& viewId, const std::string& pluginName) {
+        std::unique_lock lock(viewsMutex);
+        auto it = views.find(viewId);
+        if (it != views.end() && it->second) {
+            it->second->translationsPluginName = pluginName;
+            logger::info("RegisterTranslations: View [{}] registered translations for '{}'", viewId, pluginName);
+        } else {
+            logger::warn("RegisterTranslations: View ID [{}] not found.", viewId);
+        }
+    }
 }

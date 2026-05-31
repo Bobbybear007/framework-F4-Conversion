@@ -50,4 +50,8 @@ namespace PrismaUI::ViewManager {
     // Console message callback registration
     void RegisterConsoleCallback(const Core::PrismaViewId& viewId,
                                  std::function<void(Core::PrismaViewId, PRISMA_UI_API::ConsoleMessageLevel, const std::string&)> callback);
+
+    // Translations — inject window.L10N / window.t before page scripts run.
+    // pluginName is the bare plugin name matching the translation filename, e.g. "MyPlugin_F4".
+    void RegisterTranslations(const Core::PrismaViewId& viewId, const std::string& pluginName);
 }

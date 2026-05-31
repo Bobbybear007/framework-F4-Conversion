@@ -3,6 +3,7 @@
 #include "Communication.h"
 #include "Core.h"
 #include "PrismaUI_F4_API.h"
+#include "Translations.h"
 
 namespace PrismaUI::Listeners {
     using namespace Core;
@@ -47,11 +48,26 @@ namespace PrismaUI::Listeners {
         });
     }
 
-    void MyLoadListener::OnWindowObjectReady(View* /*caller*/, uint64_t /*frame_id*/, bool is_main_frame,
+    void MyLoadListener::OnWindowObjectReady(View* caller, uint64_t /*frame_id*/, bool is_main_frame,
                                              const String& /*url*/) {
-        if (is_main_frame) {
-            logger::info("View [{}]: LoadListener: Window object ready.", viewId_);
-        }
+        if (!is_main_frame) return;
+        logger::info("View [{}]: LoadListener: Window object ready.", viewId_);
+
+        std::shared_lock lock(viewsMutex);
+        auto it = views.find(viewId_);
+        if (it == views.end() || !it->second || it->second->translationsPluginName.empty()) return;
+
+        std::string pluginName = it->second->translationsPluginName;
+        lock.unlock();
+
+        auto lang = Translations::DetectGameLanguage();
+        auto map  = Translations::ParseTranslationFile(pluginName, lang);
+        auto script = Translations::BuildL10NScript(map);
+        if (script.empty()) return;
+
+        ultralight::String ulScript(script.c_str());
+        caller->EvaluateScript(ulScript);
+        logger::info("View [{}]: Injected L10N for '{}' ({} keys, lang={})", viewId_, pluginName, map.size(), lang);
     }
 
     void MyLoadListener::OnDOMReady(View* /*caller*/, uint64_t /*frame_id*/, bool is_main_frame,

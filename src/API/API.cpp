@@ -2,6 +2,7 @@
 #include "Utils/Encoding.h"
 #include "PrismaUI/ViewManager.h"
 #include "PrismaUI/Communication.h"
+#include "PrismaUI/Translations.h"
 
 PrismaView PluginAPI::PrismaUIInterface::CreateView(const char* htmlPath, PRISMA_UI_API::OnDomReadyCallback onDomReadyCallback) noexcept
 {
@@ -239,4 +240,12 @@ void PluginAPI::PrismaUIInterface::RegisterConsoleCallback(PrismaView view, PRIS
 	} else {
 		PrismaUI::ViewManager::RegisterConsoleCallback(view, nullptr);
 	}
+}
+
+void PluginAPI::PrismaUIInterface::RegisterTranslations(PrismaView view, const char* pluginName) noexcept
+{
+	if (!view || !pluginName || pluginName[0] == '\0') {
+		return;
+	}
+	PrismaUI::ViewManager::RegisterTranslations(view, pluginName);
 }
