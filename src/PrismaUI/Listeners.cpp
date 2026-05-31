@@ -90,23 +90,26 @@ namespace PrismaUI::Listeners {
 
     MyViewListener::~MyViewListener() = default;
 
-    void MyViewListener::OnAddConsoleMessage(View* /*caller*/, const ConsoleMessage& message) {
+    void MyViewListener::OnAddConsoleMessage(ultralight::View* /*caller*/, ultralight::MessageSource /*source*/,
+                                              ultralight::MessageLevel level, const ultralight::String& message,
+                                              uint32_t /*line_number*/, uint32_t /*column_number*/,
+                                              const ultralight::String& /*source_id*/) {
         std::shared_lock lock(viewsMutex);
         auto it = views.find(viewId_);
         if (it != views.end() && it->second && it->second->consoleMessageCallback) {
-            PRISMA_UI_API::ConsoleMessageLevel level = PRISMA_UI_API::ConsoleMessageLevel::Log;
-            switch (message.level()) {
-                case kMessageLevel_Warning: level = PRISMA_UI_API::ConsoleMessageLevel::Warning; break;
-                case kMessageLevel_Error:   level = PRISMA_UI_API::ConsoleMessageLevel::Error; break;
-                case kMessageLevel_Debug:   level = PRISMA_UI_API::ConsoleMessageLevel::Debug; break;
-                case kMessageLevel_Info:    level = PRISMA_UI_API::ConsoleMessageLevel::Info; break;
+            PRISMA_UI_API::ConsoleMessageLevel prismaLevel = PRISMA_UI_API::ConsoleMessageLevel::Log;
+            switch (level) {
+                case kMessageLevel_Warning: prismaLevel = PRISMA_UI_API::ConsoleMessageLevel::Warning; break;
+                case kMessageLevel_Error:   prismaLevel = PRISMA_UI_API::ConsoleMessageLevel::Error; break;
+                case kMessageLevel_Debug:   prismaLevel = PRISMA_UI_API::ConsoleMessageLevel::Debug; break;
+                case kMessageLevel_Info:    prismaLevel = PRISMA_UI_API::ConsoleMessageLevel::Info; break;
                 default: break;
             }
-            auto msg = std::string(message.message().utf8().data());
-            auto cb = it->second->consoleMessageCallback;
-            auto id = viewId_;
+            auto msg = std::string(message.utf8().data());
+            auto cb  = it->second->consoleMessageCallback;
+            auto id  = viewId_;
             lock.unlock();
-            cb(id, level, msg);
+            cb(id, prismaLevel, msg);
         }
     }
 

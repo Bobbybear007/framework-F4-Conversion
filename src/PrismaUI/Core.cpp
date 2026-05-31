@@ -402,7 +402,6 @@ namespace PrismaUI::Core {
 
                 if (localRenderer) {
                     localRenderer->Update();
-                    localRenderer->RefreshDisplay(0);
                     localRenderer->Render();
                 }
 

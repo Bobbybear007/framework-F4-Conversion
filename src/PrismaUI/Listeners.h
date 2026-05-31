@@ -5,7 +5,6 @@
 #include <AppCore/Platform.h>
 #include <JavaScriptCore/JSRetainPtr.h>
 #include <Ultralight/String.h>
-#include <Ultralight/ConsoleMessage.h>
 #include <Ultralight/Ultralight.h>
 #include <Ultralight/View.h>
 #pragma warning(pop)
@@ -40,7 +39,10 @@ namespace PrismaUI::Listeners {
         explicit MyViewListener(Core::PrismaViewId id);
         virtual ~MyViewListener();
 
-        virtual void OnAddConsoleMessage(View* caller, const ConsoleMessage& message) override;
+        virtual void OnAddConsoleMessage(ultralight::View* caller, ultralight::MessageSource source,
+                                         ultralight::MessageLevel level, const ultralight::String& message,
+                                         uint32_t line_number, uint32_t column_number,
+                                         const ultralight::String& source_id) override;
         virtual RefPtr<View> OnCreateInspectorView(View* caller, bool is_local, const String& inspectedURL) override;
     };
 
