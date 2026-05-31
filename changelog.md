@@ -1,3 +1,12 @@
+# Version 1.4
+
+docs(prismaui): update API reference, examples, getting-started, view-lifecycle for V4
+- IVPrismaUI4 / BindUIEvent added throughout
+- RegisterTranslations (V3) documented in api-reference and examples
+- All examples updated from IVPrismaUI3 to IVPrismaUI4
+- "Updating Your Plugin" migration section in api-reference
+- DOM Ready callback section shows BindUIEvent vs RegisterJSListener guidance****
+
 # Version 1.3
 
 ## Runtime Compatibility
