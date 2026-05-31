@@ -219,6 +219,62 @@ If you want to block mouse clicks from reaching the game (e.g., a full-screen ov
 
 ---
 
+## Animations
+
+CSS `@keyframes`, `transition`, and `requestAnimationFrame` all work natively — no libraries needed for standard UI motion.
+
+For more complex animation formats, the following are all supported:
+
+### Animated WebP and APNG
+
+Drop-in replacements for GIF. Both support full 32-bit colour, clean transparency, and 60 FPS. Export from any image tool and reference via `<img>` or CSS `background-image`.
+
+```html
+<img src="icon-animated.webp" alt="">
+```
+
+### Lottie (vector JSON animations)
+
+Export from Adobe After Effects via the Bodymovin plugin, or from Adobe Animate. Renders as crisp SVG or Canvas at any resolution.
+
+**Requirements:**
+- Bundle `lottie.min.js` as a local file — external CDN URLs are blocked.
+- Set `renderer: 'svg'` or `renderer: 'canvas'`. Both work.
+- Set `worker: false` — Web Workers are not available.
+
+```html
+<script src="lottie.min.js"></script>
+<div id="anim"></div>
+<script>
+lottie.loadAnimation({
+    container: document.getElementById('anim'),
+    renderer: 'svg',
+    loop: true,
+    autoplay: true,
+    worker: false,      // required — Workers are blocked
+    path: 'animation.json'
+});
+</script>
+```
+
+### Adobe Animate HTML5 Canvas export
+
+Adobe Animate can publish directly to HTML5 Canvas, preserving all vector shapes, keyframes, and timeline animations. The publish output is a `.js` file using the CreateJS library.
+
+**Requirements:**
+- Bundle `createjs.min.js` as a local file — external CDN URLs are blocked.
+- Reference the exported `.js` alongside your HTML file.
+
+```html
+<canvas id="canvas" width="550" height="400"></canvas>
+<script src="createjs.min.js"></script>
+<script src="my_animation.js"></script>
+```
+
+> **Note:** When exporting from Animate, point the publish settings at a local copy of CreateJS rather than the CDN URL it defaults to. The framework blocks all outbound network requests.
+
+---
+
 ## Fonts
 
 System fonts available in the game process: `Courier New`, `Arial`, `Segoe UI`, `Consolas`. For a terminal/retro look, `Courier New` or `Consolas` are reliable. You can embed a font as base64 in a `@font-face` rule if needed, but avoid loading fonts from external URLs.
