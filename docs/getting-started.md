@@ -347,3 +347,11 @@ Logs are written to:
 JavaScript `console.log()`, `console.warn()`, and `console.error()` calls appear in the log if you registered a `ConsoleMessageCallback` (see the `CreateViews` example above). Always register this callback during development.
 
 Open the Ultralight inspector for live DOM debugging: see [docs/view-lifecycle.md](view-lifecycle.md#inspector).
+
+---
+
+## No C++ needed? Use PrismaMCM
+
+If you only need a settings screen that binds sliders and toggles to Papyrus properties or TESGlobal forms, you do not need to write any C++. Drop a `config.json` file and PrismaMCM handles everything.
+
+See [prismamcm.md](prismamcm.md) for the full schema, source types, and examples.
