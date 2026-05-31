@@ -26,7 +26,7 @@ The framework loads views via `file:///` URIs resolved relative to `Data/PrismaU
 
 - **ES2020+**: `const`, `let`, arrow functions, template literals, destructuring, `async/await`, Promises, `class`, optional chaining (`?.`), nullish coalescing (`??`)
 - **DOM API**: Full access to `document`, `window`, `Element`, event listeners, `setTimeout`/`setInterval`, `requestAnimationFrame`
-- **Fetch API**: Available for `file://` resources. Not useful for network requests (game process has no internet access by design).
+- **Fetch API**: `fetch` is set to `undefined` by the framework's network sandbox. Use C++ → JS via `InteropCall`/`Invoke` for all data delivery.
 - **CSS**: Flexbox, Grid, CSS variables (`--var`), animations (`@keyframes`), transitions, `calc()`, `backdrop-filter`, `clip-path`
 - **Web Storage**: `localStorage` and `sessionStorage` are available but data is scoped to the view's URL. Not persistent across game launches.
 - **JSON**: `JSON.parse` / `JSON.stringify` work normally.
@@ -40,13 +40,15 @@ The framework loads views via `file:///` URIs resolved relative to `Data/PrismaU
 | `IntersectionObserver` | Not implemented | Guard with `typeof IntersectionObserver !== 'undefined'` |
 | `ResizeObserver` | Not implemented | Use fixed layout or window resize events |
 | `WebGL` / `WebGPU` | Not available | Use D3D11 from C++ side |
-| `Worker` / `SharedWorker` | Not available | Keep processing on main JS thread |
+| `Worker` / `SharedWorker` | Blocked by security sandbox | Keep processing on main JS thread |
 | `IndexedDB` | Not available | Use `localStorage` or pass data from C++ |
-| `WebSockets` / `XMLHttpRequest` to HTTP | No network | All data comes from C++ via `InteropCall`/`Invoke` |
+| `fetch` / `XMLHttpRequest` / `WebSocket` / `EventSource` | **Blocked** — set to `undefined` before page scripts run | All data comes from C++ via `InteropCall`/`Invoke` |
+| `navigator.sendBeacon` / `navigator.serviceWorker` | **Blocked** by security sandbox | N/A |
+| External URLs in `CreateView` | **Rejected** — `http://`/`https://` paths return 0 | Use local `file://` paths only |
 | `dbg()` | Not a thing | Use `console.log()` only |
 | `alert()` / `confirm()` / `prompt()` | Not implemented | Build your own modal in HTML |
 | CSS `@import` | May not resolve | Inline all CSS in `<style>` tags |
-| External fonts via `@font-face url(http...)` | No network | Use system fonts or embed font as base64 |
+| External fonts via `@font-face url(http...)` | **Blocked** by CSP | Use system fonts or embed font as base64 data URI |
 
 ### Always Guard Optional APIs
 

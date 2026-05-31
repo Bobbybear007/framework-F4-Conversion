@@ -2,6 +2,7 @@
 
 #include "Communication.h"
 #include "Core.h"
+#include "NetworkSandbox.h"
 #include "PrismaUI_F4_API.h"
 #include "Translations.h"
 
@@ -53,6 +54,17 @@ namespace PrismaUI::Listeners {
         if (!is_main_frame) return;
         logger::info("View [{}]: LoadListener: Window object ready.", viewId_);
 
+        // ── Network sandbox (Layer 1: JS kill + Layer 2: CSP meta) ─────────────────
+        // Runs BEFORE page scripts. configurable:false descriptors cannot be reversed.
+        {
+            ultralight::String exc;
+            caller->EvaluateScript(ultralight::String(NetworkSandbox::kNetworkBlockScript), &exc);
+            if (!exc.empty())
+                logger::warn("View [{}]: Network sandbox injection failed: {}", viewId_, exc.utf8().data());
+            else
+                logger::debug("View [{}]: Network sandbox injected.", viewId_);
+        }
+
         std::shared_lock lock(viewsMutex);
         auto it = views.find(viewId_);
         if (it == views.end() || !it->second || it->second->translationsPluginName.empty()) return;
@@ -90,10 +102,24 @@ namespace PrismaUI::Listeners {
 
     MyViewListener::~MyViewListener() = default;
 
-    void MyViewListener::OnAddConsoleMessage(ultralight::View* /*caller*/, ultralight::MessageSource /*source*/,
+    // ── Layer 3: Block child view creation (window.open, target=_blank) ──────────
+    RefPtr<View> MyViewListener::OnCreateChildView(View* /*caller*/, const String& /*opener_url*/,
+                                                    const String& target_url, bool /*is_popup*/,
+                                                    const IntRect& /*popup_rect*/) {
+        logger::warn("[PrismaUI Security] Blocked child view navigation to '{}'",
+                     target_url.utf8().data());
+        return nullptr;
+    }
+
+    void MyViewListener::OnAddConsoleMessage(ultralight::View* /*caller*/, ultralight::MessageSource source,
                                               ultralight::MessageLevel level, const ultralight::String& message,
                                               uint32_t /*line_number*/, uint32_t /*column_number*/,
                                               const ultralight::String& /*source_id*/) {
+        // ── Layer 4: Log network-source messages ───────────────────────────────────
+        // kMessageSource_Network errors indicate blocked resource loads or CSP violations.
+        if (source == kMessageSource_Network) {
+            logger::warn("[PrismaUI Security] View [{}]: [Network] {}", viewId_, message.utf8().data());
+        }
         std::shared_lock lock(viewsMutex);
         auto it = views.find(viewId_);
         if (it != views.end() && it->second && it->second->consoleMessageCallback) {

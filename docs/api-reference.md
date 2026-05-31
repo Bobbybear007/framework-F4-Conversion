@@ -157,7 +157,7 @@ Creates an HTML view and begins loading the specified file.
 
 | Parameter | Description |
 |-----------|-------------|
-| `htmlPath` | Path relative to `Data/PrismaUI_F4/views/`, e.g. `"Interface/MyPlugin/menu.html"`. The framework prepends `file:///views/`. **Exception:** if the string starts with `http://` or `https://`, it is used as-is. |
+| `htmlPath` | Path relative to `Data/PrismaUI_F4/views/`, e.g. `"Interface/MyPlugin/menu.html"`. The framework prepends `file:///views/`. Paths beginning with `http://` or `https://` are **rejected** — the call returns `0`. |
 | `onDomReadyCallback` | Optional. Called once on the main game thread when the DOM is fully parsed. Safe to call `RegisterJSListener`, `BindUIEvent`, and `Invoke` from here. |
 
 **Returns** a non-zero `PrismaView` handle on success. The view starts **hidden** — call `Show(view)` when you want it visible.
@@ -554,3 +554,35 @@ Toggle (key press):
     g_api->Unfocus(g_view)
     g_api->Hide(g_view)
 ```
+
+---
+
+## Security & Privacy
+
+PrismaUI_F4 runs a full web-rendering engine (Ultralight/WebKit) inside the Fallout 4 process. Every view has access to F4SE's task interface and the full game address space through C++ callbacks registered by the hosting plugin. The following protections are applied automatically to every view created by any plugin, regardless of interface version (V1–V4):
+
+### Network sandbox
+
+The framework injects a security script into every view **before any page scripts execute** (`OnWindowObjectReady`). This script:
+
+- Replaces `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `Worker`, `SharedWorker`, `navigator.sendBeacon`, and `navigator.serviceWorker` with `undefined` using `Object.defineProperty({ configurable: false })`. Page scripts **cannot redefine or delete** these descriptors.
+- Injects a `Content-Security-Policy` meta tag with `connect-src: 'none'` as the first element of `<head>`, blocking browser-level network loads (`<script src="https://...">`, `<img src="https://...">`, CSS `@import url(https://...)`, etc.).
+
+### URL restrictions
+
+`CreateView` rejects any `htmlPath` that begins with `http://` or `https://`. External URLs return `0` (invalid handle) and log an error. All views must load from local `file://` paths under `Data/PrismaUI_F4/views/`.
+
+### Child view blocking
+
+`window.open()` and `<a target="_blank">` navigation are blocked. Attempts are logged.
+
+### What is not blocked
+
+- `eval()` and `new Function()` — intentionally permitted for compatibility with mod UI patterns.
+- Local `file://` reads — views can load local assets normally.
+- C++ → JS calls via `InteropCall`/`Invoke` — these are the intended data channel and are not restricted.
+- Non-JS DLL code making direct WinSock calls — out of scope; this sandbox operates at the JS/browser layer only.
+
+### Audit logging
+
+All network-source console messages (CSP violations, blocked resource loads) are written to the PrismaUI_F4 spdlog output at `warn` level, prefixed `[PrismaUI Security]`.

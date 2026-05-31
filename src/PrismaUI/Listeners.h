@@ -43,6 +43,10 @@ namespace PrismaUI::Listeners {
                                          ultralight::MessageLevel level, const ultralight::String& message,
                                          uint32_t line_number, uint32_t column_number,
                                          const ultralight::String& source_id) override;
+        // Explicitly block all child-view creation (window.open, target=_blank).
+        virtual RefPtr<View> OnCreateChildView(View* caller, const String& opener_url,
+                                               const String& target_url, bool is_popup,
+                                               const IntRect& popup_rect) override;
         virtual RefPtr<View> OnCreateInspectorView(View* caller, bool is_local, const String& inspectedURL) override;
     };
 

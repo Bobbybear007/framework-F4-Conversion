@@ -25,13 +25,16 @@ namespace PrismaUI::ViewManager {
 
         Core::PrismaViewId newViewId = generator.generate();
 
-        // Check if htmlPath is a website URL (starts with http:// or https://)
-        std::string fileUrl;
+        // External URLs are blocked — only file:// paths are permitted.
+        // A malicious mod calling CreateView("https://evil.com/...") would load a remote
+        // page into a game process with full F4SE/RE:: access. Reject at the source.
         if (htmlPath.substr(0, 7) == "http://" || htmlPath.substr(0, 8) == "https://") {
-            fileUrl = htmlPath;
-        } else {
-            fileUrl = "file:///views/" + htmlPath;
+            logger::error("[PrismaUI Security] CreateView blocked: external URL '{}' is not permitted. "
+                          "Only local file paths relative to Data/PrismaUI_F4/views/ are allowed.",
+                          htmlPath);
+            return 0;
         }
+        std::string fileUrl = "file:///views/" + htmlPath;
 
         auto viewData = std::make_shared<Core::PrismaView>();
         viewData->id = newViewId;
