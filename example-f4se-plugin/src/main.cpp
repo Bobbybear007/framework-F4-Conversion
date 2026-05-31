@@ -1,14 +1,16 @@
 // example-f4se-plugin/src/main.cpp
 //
 // Demonstrates PrismaUI_F4 integration:
-//   - Acquires IVPrismaUI3 on kGameDataReady.
+//   - Acquires IVPrismaUI4 on kGameDataReady.
 //   - Creates a view on kPostLoadGame / kNewGame.
 //   - Registers JS listeners inside OnDomReady.
 //   - F3 key toggles show/focus.
 //   - C++ -> JS via Invoke() and InteropCall().
-//   - JS -> C++ via RegisterJSListener().
+//   - JS -> C++ via BindUIEvent() — callback fires on game thread, RE:: access safe directly.
+//   - Optional: PrismaUI_F4_Helper.h for JSON parsing and Papyrus event dispatch.
 #include "PCH.h"
 #include "PrismaUI_F4_API.h"
+#include "PrismaUI_F4_Helper.h"
 #include "keyhandler/keyhandler.h"
 
 static PRISMA_UI_API::IVPrismaUI4* g_api  = nullptr;
@@ -18,8 +20,8 @@ static bool                         g_visible = false;
 static void OnDomReady(PrismaView v)
 {
     // Safe: DOM is ready — register listeners and push initial data.
-    // JSListenerCallback fires on the Ultralight render thread.
-    // Any RE:: access must be dispatched via F4SE::GetTaskInterface()->AddTask.
+    // BindUIEvent callbacks fire on the game thread — RE:: access is safe directly.
+    // RegisterJSListener callbacks fire on the Ultralight render thread — use AddTask for RE:: access.
 
     g_api->RegisterConsoleCallback(v, [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel lvl, const char* msg) {
         const char* tag = lvl == PRISMA_UI_API::ConsoleMessageLevel::Error   ? "[JS ERR] " :
@@ -28,18 +30,28 @@ static void OnDomReady(PrismaView v)
         logger::info("{} {}", tag, msg);
     });
 
-    g_api->RegisterJSListener(v, "requestClose", [](const char*) {
+    // BindUIEvent — fires on the game thread. RE:: access works directly inside the callback.
+    g_api->BindUIEvent(v, "requestClose", [](const char*) {
         g_visible = false;
         g_api->Unfocus(g_view);
         g_api->Hide(g_view);
     });
 
-    // BindUIEvent — game-thread-safe, RE:: access works directly inside the callback.
-    // No AddTask needed. Use this any time you need to touch game state from JS.
+    // Receives JSON from JS: { "message": "..." }
+    // GetJsonString parses the value without pulling in a full JSON library.
     g_api->BindUIEvent(v, "sendDataToF4SE", [](const char* data) {
-        logger::info("Received from JS: {}", data ? data : "");
-        // RE:: access safe here — already on game thread
+        std::string msg = PRISMA_UI_HELPER::GetJsonString(data ? data : "", "message");
+        logger::info("Received from JS: {}", msg);
+
+        // RE:: access safe here — already on game thread.
+        // Example: read player health
         // auto* player = RE::PlayerCharacter::GetSingleton();
+        // float hp = player->GetActorValue(*RE::ActorValue::GetSingleton()->health);
+
+        // Example: fire a Papyrus custom event on a quest form (see PrismaUI_F4_Helper.h).
+        // Requires CustomEvent OnDataReceived declared in a Papyrus script attached to the form.
+        // auto* form = RE::TESForm::GetFormByID(0x12345);
+        // PRISMA_UI_HELPER::SendPapyrusEvent(form, "OnDataReceived");
     });
 
     g_api->Invoke(v, "init()");
@@ -51,8 +63,7 @@ static void CreateViews()
     if (!g_api || (g_view != 0 && g_api->IsValid(g_view))) return;
 
     g_view = g_api->CreateView("PrismaUI-F4-Example/index.html", OnDomReady);
-    // Views start hidden — no Hide() needed, but explicit is fine:
-    // g_api->Hide(g_view);
+    // Views start hidden.
 }
 
 static void Toggle()
@@ -83,7 +94,7 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* message)
 
         KeyHandler::RegisterSink();
         // F4 uses Windows VK codes — RE::BS_BUTTON_CODE::kF3 == 0x72 (VK_F3)
-        KeyHandler::GetSingleton()->Register(
+        [[maybe_unused]] auto _ = KeyHandler::GetSingleton()->Register(
             static_cast<uint32_t>(RE::BS_BUTTON_CODE::kF3), KeyEventType::KEY_DOWN, Toggle);
         break;
     }

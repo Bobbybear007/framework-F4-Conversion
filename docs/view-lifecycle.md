@@ -71,15 +71,31 @@ Guard with `g_view == 0` to avoid creating duplicates on multiple load events.
 ```cpp
 static void OnDomReady(PrismaView view)
 {
-    // Safe to call JS operations here:
-    g_api->RegisterJSListener(view, "onClose", OnClose);
-    g_api->RegisterJSListener(view, "onDataRequest", OnDataRequest);
+    // RegisterConsoleCallback — capture JS errors during development
+    g_api->RegisterConsoleCallback(view,
+        [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel lvl, const char* msg) {
+            logger::info("[JS] {}", msg);
+        });
+
+    // BindUIEvent (V4) — fires on game thread, RE:: access safe directly
+    g_api->BindUIEvent(view, "onAction", [](const char* data) {
+        // RE:: access safe here
+    });
+
+    // RegisterJSListener — use for pure UI callbacks that don't need game state
+    g_api->RegisterJSListener(view, "onClose", [](const char*) {
+        g_api->Unfocus(g_view);
+        g_api->Hide(g_view);
+    });
+
     g_api->Invoke(view, "init()");
     logger::info("DOM ready for view {}", view);
 }
 ```
 
-The callback receives the view handle so you can use one function for multiple views.
+The callback fires on the **main game thread** (dispatched via `AddTask`). The view handle is passed so you can use one `OnDomReady` function for multiple views.
+
+**Do not call `Invoke`, `RegisterJSListener`, or `BindUIEvent` before this callback fires.** The JS context is not ready until then.
 
 ---
 

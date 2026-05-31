@@ -53,6 +53,7 @@ target_link_libraries(${PROJECT_NAME}
     imm32
     bcrypt
     version
+    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/lib/x64/libcpmt.lib"
 )
 
 target_link_options(${PROJECT_NAME}

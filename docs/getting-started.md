@@ -27,7 +27,8 @@ MyPlugin_F4/
 │   ├── main.cpp
 │   ├── KeyHandler.h
 │   ├── KeyHandler.cpp
-│   └── PrismaUI_F4_API.h       ← copy from PrismaUI_F4/src/
+│   ├── PrismaUI_F4_API.h       ← copy from PrismaUI_F4/src/
+│   └── PrismaUI_F4_Helper.h    ← optional; copy from PrismaUI_F4/src/
 ├── assets/
 │   └── views/
 │       └── mymenu.html
@@ -151,17 +152,33 @@ Copy these files verbatim from `PrismaInventory_F4/src/` or `PrismaShowcase_F4/s
 
 ```cpp
 #include "PrismaUI_F4_API.h"
+#include "PrismaUI_F4_Helper.h"  // optional — JSON helpers
 #include "KeyHandler.h"
 #include <spdlog/sinks/basic_file_sink.h>
 
-static PRISMA_UI_API::IVPrismaUI2* g_api  = nullptr;
+static PRISMA_UI_API::IVPrismaUI4* g_api  = nullptr;
 static PrismaView                   g_view = 0;
 static bool                         g_visible = false;
 
-static void OnDomReady(PrismaView /*view*/)
+static void OnDomReady(PrismaView view)
 {
-    // DOM is ready — safe to call Invoke / RegisterJSListener here
-    logger::info("MyPlugin: DOM ready");
+    g_api->RegisterConsoleCallback(view,
+        [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel lvl, const char* msg) {
+            const char* tag = (lvl == PRISMA_UI_API::ConsoleMessageLevel::Error)  ? "[JS ERR] " :
+                              (lvl == PRISMA_UI_API::ConsoleMessageLevel::Warning) ? "[JS WARN]" :
+                                                                                     "[JS LOG] ";
+            logger::info("{} {}", tag, msg);
+        });
+
+    // BindUIEvent — callback fires on game thread, RE:: access is safe directly
+    g_api->BindUIEvent(view, "requestClose", [](const char*) {
+        g_visible = false;
+        g_api->Unfocus(g_view);
+        g_api->Hide(g_view);
+    });
+
+    g_api->Invoke(view, "init()");
+    logger::info("MyPlugin: DOM ready (view={})", view);
 }
 
 static void Toggle()
@@ -170,7 +187,7 @@ static void Toggle()
     g_visible = !g_visible;
     if (g_visible) {
         g_api->Show(g_view);
-        g_api->Focus(g_view, /*pauseGame=*/true, /*disableFocusMenu=*/false);
+        g_api->Focus(g_view, /*pauseGame=*/true);
     } else {
         g_api->Unfocus(g_view);
         g_api->Hide(g_view);
@@ -179,16 +196,11 @@ static void Toggle()
 
 static void CreateViews()
 {
-    if (g_view != 0) return;
-    g_view = g_api->CreateView("mymenu.html", OnDomReady);
-    g_api->RegisterConsoleCallback(g_view,
-        [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel lvl, const char* msg) {
-            const char* tag = (lvl == PRISMA_UI_API::ConsoleMessageLevel::Error)  ? "[JS ERR] " :
-                              (lvl == PRISMA_UI_API::ConsoleMessageLevel::Warning) ? "[JS WARN]" :
-                                                                                     "[JS LOG] ";
-            logger::info("{} {}", tag, msg);
-        });
-    g_api->Hide(g_view);  // views start visible — hide immediately
+    if (g_view && g_api->IsValid(g_view)) return;
+    g_view = g_api->CreateView("Interface/MyPlugin/mymenu.html", OnDomReady);
+    // RegisterTranslations must be called here, before DOM ready (V3+)
+    // g_api->RegisterTranslations(g_view, "MyPlugin_F4");
+    g_api->Hide(g_view);
     logger::info("MyPlugin: view created (id={})", g_view);
 }
 
@@ -196,7 +208,7 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg)
 {
     switch (msg->type) {
     case F4SE::MessagingInterface::kGameDataReady:
-        g_api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI2>();
+        g_api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI4>();
         if (!g_api) { logger::error("MyPlugin: PrismaUI_F4 not found — is it installed?"); return; }
         KeyHandler::RegisterSink();
         KeyHandler::GetSingleton()->Register(0x43, KeyEventType::KEY_DOWN, Toggle); // F9

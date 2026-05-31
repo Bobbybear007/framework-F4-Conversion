@@ -189,12 +189,22 @@
         button:hover  { background: rgba(59,130,246,0.28); }
         button:active { background: rgba(59,130,246,0.45); }
 
+        button.close-btn {
+            background: rgba(239,68,68,0.12);
+            border-color: rgba(239,68,68,0.3);
+            color: #ef4444;
+        }
+
+        button.close-btn:hover  { background: rgba(239,68,68,0.25); }
+        button.close-btn:active { background: rgba(239,68,68,0.4); }
+
         /* ── Footer ── */
         .panel-footer {
             padding: 9px 16px;
             border-top: 1px solid rgba(255,255,255,0.06);
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         .hint {
@@ -242,9 +252,9 @@
 
             <!-- JS → C++ send -->
             <div class="card">
-                <div class="card-label">JS → C++ — calls sendDataToF4SE() listener</div>
+                <div class="card-label">JS → C++ — fires sendDataToF4SE() via BindUIEvent</div>
                 <div class="send-row">
-                    <input id="data-input" type="text" placeholder="Payload to send to plugin..." />
+                    <input id="data-input" type="text" placeholder="Message to send to plugin..." />
                     <button onclick="sendInputData()">Send</button>
                 </div>
             </div>
@@ -252,8 +262,8 @@
         </div>
 
         <div class="panel-footer">
-            <div class="hint"><kbd>F3</kbd> Toggle Focus</div>
-            <div class="hint">Check F4SE log for received data</div>
+            <div class="hint"><kbd>F3</kbd> Toggle · Check F4SE log for received data</div>
+            <button class="close-btn" onclick="closePanel()">Close</button>
         </div>
     </div>
 
@@ -267,10 +277,18 @@
             const t = now.toTimeString().slice(0,8);
             const entry = document.createElement('div');
             entry.className = 'log-entry';
-            entry.innerHTML = `<span class="log-time">${t}</span><span class="log-dir ${direction === 'in' ? 'in' : 'out'}">${direction === 'in' ? 'C++→JS' : 'JS→C++'}</span><span class="log-msg">${message}</span>`;
+            entry.innerHTML = `<span class="log-time">${t}</span>`
+                            + `<span class="log-dir ${direction === 'in' ? 'in' : 'out'}">${direction === 'in' ? 'C++→JS' : 'JS→C++'}</span>`
+                            + `<span class="log-msg">${message}</span>`;
             logEl.appendChild(entry);
             if (logEl.children.length > 6) logEl.removeChild(logEl.children[0]);
         }
+
+        // Called from C++ via: api->Invoke(view, "init()")
+        // Fires once when the DOM is ready.
+        window.init = () => {
+            appendLog('in', 'init() — DOM ready');
+        };
 
         // Called from C++ via: api->Invoke(view, "updateFocusLabel('...')")
         window.updateFocusLabel = (msg) => {
@@ -282,13 +300,27 @@
             appendLog('in', `updateFocusLabel("${msg}")`);
         };
 
+        // Sends JSON to C++ BindUIEvent("sendDataToF4SE").
+        // C++ side uses GetJsonString(data, "message") from PrismaUI_F4_Helper.h to parse.
         function sendInputData() {
-            const val = document.getElementById('data-input').value;
+            const val = document.getElementById('data-input').value.trim();
             if (!val) return;
-            appendLog('out', `sendDataToF4SE("${val}")`);
-            window.sendDataToF4SE(val);
+            const payload = JSON.stringify({ message: val });
+            appendLog('out', `sendDataToF4SE(${payload})`);
+            window.sendDataToF4SE(payload);
             document.getElementById('data-input').value = '';
         }
+
+        // Close button — fires BindUIEvent("requestClose") in C++.
+        function closePanel() {
+            appendLog('out', 'requestClose()');
+            window.requestClose();
+        }
+
+        // Allow Enter key to send
+        document.getElementById('data-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendInputData();
+        });
     </script>
 </body>
 </html>

@@ -13,13 +13,17 @@ PrismaView PluginAPI::PrismaUIInterface::CreateView(const char* htmlPath, PRISMA
     std::function<void(PrismaUI::Core::PrismaViewId)> domReadyWrapper = nullptr;
     if (onDomReadyCallback) {
         domReadyWrapper = [onDomReadyCallback](PrismaUI::Core::PrismaViewId viewId) {
+            logger::info("CreateView: DOM ready for view [{}] — dispatching OnDomReady to game thread", viewId);
             F4SE::GetTaskInterface()->AddTask([callback = onDomReadyCallback, id = viewId]() {
+                logger::info("CreateView: OnDomReady fired for view [{}] on game thread", id);
                 callback(id);
             });
         };
     }
 
-    return PrismaUI::ViewManager::Create(htmlPath, domReadyWrapper);
+    auto newViewId = PrismaUI::ViewManager::Create(htmlPath, domReadyWrapper);
+    logger::info("CreateView: path='{}' -> view [{}]", htmlPath, newViewId);
+    return newViewId;
 }
 
 void PluginAPI::PrismaUIInterface::Invoke(PrismaView view, const char* script, PRISMA_UI_API::JSCallback callback) noexcept
@@ -79,11 +83,16 @@ void PluginAPI::PrismaUIInterface::InteropCall(PrismaView view, const char* func
 void PluginAPI::PrismaUIInterface::RegisterJSListener(PrismaView view, const char* fnName, PRISMA_UI_API::JSListenerCallback callback) noexcept
 {
     if (!view || !fnName || !callback) {
+        logger::warn("RegisterJSListener: invalid args — view={} fn={}", view, fnName ? fnName : "null");
         return;
     }
 
-    std::function<void(std::string)> callbackWrapper = [callback](const std::string& arg) {
-        F4SE::GetTaskInterface()->AddTask([targetCallback = callback, data = arg]() {
+    logger::info("RegisterJSListener: View [{}] registering '{}'", view, fnName);
+
+    std::string name = fnName;
+    std::function<void(std::string)> callbackWrapper = [callback, view, name](const std::string& arg) {
+        F4SE::GetTaskInterface()->AddTask([targetCallback = callback, data = arg, view, name]() {
+            logger::info("RegisterJSListener fired: View [{}] '{}' — data: '{}'", view, name, data);
             targetCallback(data.c_str());
         });
     };
@@ -231,6 +240,7 @@ void PluginAPI::PrismaUIInterface::RegisterConsoleCallback(PrismaView view, PRIS
 	}
 
 	if (callback) {
+		logger::info("RegisterConsoleCallback: View [{}] registered JS console capture", view);
 		auto wrappedCallback = [callback](PrismaUI::Core::PrismaViewId id, PRISMA_UI_API::ConsoleMessageLevel level, const std::string& msg) {
 			F4SE::GetTaskInterface()->AddTask([callback, id, level, msg]() {
 				callback(id, level, msg.c_str());
@@ -238,6 +248,7 @@ void PluginAPI::PrismaUIInterface::RegisterConsoleCallback(PrismaView view, PRIS
 		};
 		PrismaUI::ViewManager::RegisterConsoleCallback(view, wrappedCallback);
 	} else {
+		logger::info("RegisterConsoleCallback: View [{}] unregistered JS console capture", view);
 		PrismaUI::ViewManager::RegisterConsoleCallback(view, nullptr);
 	}
 }
@@ -245,8 +256,10 @@ void PluginAPI::PrismaUIInterface::RegisterConsoleCallback(PrismaView view, PRIS
 void PluginAPI::PrismaUIInterface::RegisterTranslations(PrismaView view, const char* pluginName) noexcept
 {
 	if (!view || !pluginName || pluginName[0] == '\0') {
+		logger::warn("[V3] RegisterTranslations: invalid args — view={}", view);
 		return;
 	}
+	logger::info("[V3] RegisterTranslations: View [{}] -> plugin '{}'", view, pluginName);
 	PrismaUI::ViewManager::RegisterTranslations(view, pluginName);
 }
 
@@ -254,13 +267,16 @@ void PluginAPI::PrismaUIInterface::BindUIEvent(PrismaView view, const char* func
                                                 PRISMA_UI_API::JSListenerCallback callback) noexcept
 {
 	if (!view || !functionName || !callback) {
+		logger::warn("[V4] BindUIEvent: invalid args — view={} fn={}", view, functionName ? functionName : "null");
 		return;
 	}
 
-	// Wrap the raw callback in AddTask so it always fires on the game thread.
-	// RE:: access is safe directly inside the caller's lambda.
-	auto wrapped = [callback](const std::string& arg) {
-		F4SE::GetTaskInterface()->AddTask([callback, arg]() {
+	logger::info("[V4] BindUIEvent: View [{}] registering game-thread listener '{}'", view, functionName);
+
+	std::string fnName = functionName;
+	auto wrapped = [callback, view, fnName](const std::string& arg) {
+		F4SE::GetTaskInterface()->AddTask([callback, view, fnName, arg]() {
+			logger::info("[V4] BindUIEvent fired: View [{}] '{}' — data: '{}'", view, fnName, arg);
 			callback(arg.c_str());
 		});
 	};
