@@ -1,0 +1,8 @@
+build/
+dist/
+*.user
+*.suo
+.vs/
+.idea/
+build_out.txt
+build_err.txt
