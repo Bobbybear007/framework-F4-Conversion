@@ -39,10 +39,8 @@ namespace PrismaUI::Listeners {
         explicit MyViewListener(Core::PrismaViewId id);
         virtual ~MyViewListener();
 
-        virtual void OnAddConsoleMessage(ultralight::View* caller, ultralight::MessageSource source,
-                                         ultralight::MessageLevel level, const ultralight::String& message,
-                                         uint32_t line_number, uint32_t column_number,
-                                         const ultralight::String& source_id) override;
+        virtual void OnAddConsoleMessage(ultralight::View* caller,
+                                         const ultralight::ConsoleMessage& message) override;
         // Explicitly block all child-view creation (window.open, target=_blank).
         virtual RefPtr<View> OnCreateChildView(View* caller, const String& opener_url,
                                                const String& target_url, bool is_popup,

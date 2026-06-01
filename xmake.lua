@@ -26,8 +26,9 @@ add_requires("spdlog v1.16.0", { configs = { header_only = false, wchar = true, 
 
 includes("lib/commonlibf4")
 
--- Ultralight SDK paths (cmake extracts the 7z here on first configure)
-local UL_ROOT      = "$(projectdir)/build/external_builds/ultralight"
+-- Ultralight 1.4.0 SDK
+-- Run setup.bat once before building to extract external/ultralight-sdk-1.4.0-win-x64.7z
+local UL_ROOT      = path.join(os.scriptdir(), "build", "ultralight-1.4.0")
 local UL_INCLUDE   = UL_ROOT .. "/include"
 local UL_LIB       = UL_ROOT .. "/lib"
 local UL_BIN       = UL_ROOT .. "/bin"
@@ -112,9 +113,9 @@ target("PrismaUI_F4")
             os.cp(assets_src, path.join(distdir, "PrismaUI_F4"))
         end
 
-        -- Ultralight resources + binaries
-        local ul_res = path.join(proj, "build", "external_builds", "ultralight", "resources")
-        local ul_bin = path.join(proj, "build", "external_builds", "ultralight", "bin")
+        -- Ultralight 1.4.0 resources + binaries
+        local ul_res = path.join(os.scriptdir(), "build", "ultralight-1.4.0", "resources")
+        local ul_bin = path.join(os.scriptdir(), "build", "ultralight-1.4.0", "bin")
         if os.isdir(ul_res) then
             os.cp(ul_res, path.join(distdir, "PrismaUI_F4", "resources"))
         end

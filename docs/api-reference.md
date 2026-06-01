@@ -74,7 +74,7 @@ All callbacks fire on the **main game thread**. RE:: access is safe inside all c
 | `IVPrismaUI1` | V1 | All core view operations |
 | `IVPrismaUI2` | V2 | `RegisterConsoleCallback` |
 | `IVPrismaUI3` | V3 | `RegisterTranslations` |
-| `IVPrismaUI4` | V4 | `BindUIEvent` |
+| `IVPrismaUI4` | V4 | `BindUIEvent`, `EnumerateViews` |
 
 Interfaces are additive — `IVPrismaUI4` exposes every method from V1 through V4. Always request the highest version you need. If the user's installed PrismaUI_F4 does not support your requested version, `RequestPluginAPI` returns `nullptr` — handle this gracefully.
 
@@ -526,6 +526,33 @@ Both fire on the game thread. Use `BindUIEvent` when your callback accesses RE::
 
 ---
 
+### `EnumerateViews`
+
+```cpp
+// Callback type — called once per registered view
+typedef void (*ViewEnumCallback)(PrismaView id, const char* htmlPath, void* userdata);
+
+virtual void EnumerateViews(ViewEnumCallback callback, void* userdata) noexcept = 0;
+```
+
+Iterates over every currently-registered view across all plugins. Useful for debug tooling or overlay managers that need to know what views are alive.
+
+| Parameter | Description |
+|-----------|-------------|
+| `callback` | Called synchronously for each view. `id` is the view handle; `htmlPath` is the relative path that was passed to `CreateView` (e.g. `"Interface/PrismaMCM/mcm.html"`). |
+| `userdata` | Arbitrary pointer forwarded to the callback — use to pass context without a global. |
+
+**Thread safety:** Safe to call from any thread.
+
+```cpp
+// List all active views to the log
+g_api->EnumerateViews([](PrismaView id, const char* path, void*) {
+    logger::info("  view={} path={}", id, path);
+}, nullptr);
+```
+
+---
+
 ## Typical Call Sequence
 
 ```
@@ -572,8 +599,8 @@ PrismaUI_F4 automatically injects `window.prisma` into every view before `OnDomR
 
 **Parameters:**
 
-- `esp` — plugin filename including extension, e.g. `"MyMod.esp"` or `"MyMod.esl"`
-- `formId` — local hex form ID without the file-index byte: `"800"` = `0x00000800` in the plugin
+- `esp` — plugin filename including extension, e.g. MyMod.esp or MyMod.esl
+- `formId` — local hex form ID without the file-index byte — "800" means 0x00000800 in the plugin
 - `scriptName` — exact name of the Papyrus script attached to the form (case-insensitive)
 - `propName` — exact name of the `Auto` property declared on that script (case-insensitive)
 

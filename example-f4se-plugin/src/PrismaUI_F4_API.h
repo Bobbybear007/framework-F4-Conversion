@@ -130,6 +130,10 @@ namespace PRISMA_UI_API {
         virtual void RegisterTranslations(PrismaView view, const char* pluginName) noexcept = 0;
     };
 
+    // Callback type for EnumerateViews. Called once per view with the view's ID and its
+    // original html path (relative to Data/PrismaUI_F4/views/, e.g. "debug_panel.html").
+    typedef void (*ViewEnumCallback)(PrismaView id, const char* htmlPath, void* userdata);
+
     // PrismaUI modder interface v4 (extends v3)
     class IVPrismaUI4 : public IVPrismaUI3 {
     protected:
@@ -141,6 +145,12 @@ namespace PRISMA_UI_API {
         // Use this instead of RegisterJSListener whenever you need to touch game state.
         virtual void BindUIEvent(PrismaView view, const char* functionName,
                                  JSListenerCallback callback) noexcept = 0;
+
+        // Enumerate all currently-registered views across all plugins.
+        // Callback is invoked synchronously for each view; htmlPath is the relative path
+        // passed to CreateView (e.g., "Interface/PrismaMCM/mcm.html").
+        // Safe to call from any thread.
+        virtual void EnumerateViews(ViewEnumCallback callback, void* userdata) noexcept = 0;
     };
 
     // Maps interface types to InterfaceVersion enum values.
@@ -172,17 +182,15 @@ namespace PRISMA_UI_API {
 
     /// Request the PrismaUI API interface.
     /// Recommended: Send your request during or after F4SE::MessagingInterface::kGameDataReady to make sure the dll
-    /// has already been loaded.
-    [[nodiscard]] inline void* RequestPluginAPI(InterfaceVersion a_interfaceVersion = InterfaceVersion::V3) {
-        // NewCommonLib (xmake-based) uses REX::W32 instead of F4SE::WinAPI.
-        // Raw Win32 calls work with both old and new CommonLib builds.
-        auto pluginHandle = ::GetModuleHandleW(L"PrismaUI_F4.dll");
+    /// has already been loaded
+    [[nodiscard]] inline void* RequestPluginAPI(InterfaceVersion a_interfaceVersion = InterfaceVersion::V1) {
+        auto pluginHandle = GetModuleHandleW(L"PrismaUI_F4.dll");
         if (!pluginHandle) {
             return nullptr;
         }
 
         auto requestAPIFunction =
-            reinterpret_cast<RequestPluginAPIFunc>(::GetProcAddress(pluginHandle, "RequestPluginAPI"));
+            reinterpret_cast<RequestPluginAPIFunc>(GetProcAddress(pluginHandle, "RequestPluginAPI"));
 
         if (requestAPIFunction) {
             return requestAPIFunction(a_interfaceVersion);
