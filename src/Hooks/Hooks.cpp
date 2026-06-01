@@ -2,15 +2,15 @@
 #include "PrismaUI/Core.h"
 
 namespace Hooks {
-    HRESULT APIENTRY D3DHooks::HookPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
+    HRESULT APIENTRY D3DHooks::HookPresent(REX::W32::IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
     {
         PrismaUI::Core::D3DPresent(0);
         return oPresent(pSwapChain, SyncInterval, Flags);
     }
 
-    HRESULT APIENTRY D3DHooks::HookResizeBuffers(IDXGISwapChain* pSwapChain, UINT BufferCount,
+    HRESULT APIENTRY D3DHooks::HookResizeBuffers(REX::W32::IDXGISwapChain* pSwapChain, UINT BufferCount,
                                                   UINT Width, UINT Height,
-                                                  DXGI_FORMAT NewFormat, UINT SwapChainFlags)
+                                                  REX::W32::DXGI_FORMAT NewFormat, UINT SwapChainFlags)
     {
         PrismaUI::Core::OnResizeBuffers();
         return oResizeBuffers(pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags);
@@ -18,13 +18,13 @@ namespace Hooks {
 
     void D3DHooks::Install()
     {
-        auto* rendererData = RE::BSGraphics::RendererData::GetSingleton();
+        auto* rendererData = RE::BSGraphics::GetRendererData();
         if (!rendererData || !rendererData->renderWindow[0].swapChain) {
             logger::critical("D3DHooks::Install: Failed to get IDXGISwapChain from BSGraphics!");
             return;
         }
 
-        IDXGISwapChain* swapChain = rendererData->renderWindow[0].swapChain;
+        REX::W32::IDXGISwapChain* swapChain = rendererData->renderWindow[0].swapChain;
         void** vtable = *reinterpret_cast<void***>(swapChain);
 
         {

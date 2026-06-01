@@ -623,4 +623,27 @@ namespace PrismaUI::ViewManager {
             logger::warn("RegisterTranslations: View ID [{}] not found.", viewId);
         }
     }
+
+    void EnumerateViews(std::function<void(Core::PrismaViewId, const std::string&)> callback) {
+        if (!callback) return;
+
+        // Snapshot under shared lock so the callback runs outside the lock.
+        std::vector<std::pair<Core::PrismaViewId, std::string>> snapshot;
+        {
+            std::shared_lock lock(viewsMutex);
+            snapshot.reserve(views.size());
+            for (const auto& [id, viewData] : views) {
+                if (!viewData) continue;
+                // Strip the "file:///views/" prefix to expose the original relative path.
+                std::string path = viewData->originalUrl;
+                constexpr std::string_view kPrefix = "file:///views/";
+                if (path.rfind(kPrefix, 0) == 0)
+                    path = path.substr(kPrefix.size());
+                snapshot.emplace_back(id, std::move(path));
+            }
+        }
+
+        for (const auto& [id, path] : snapshot)
+            callback(id, path);
+    }
 }

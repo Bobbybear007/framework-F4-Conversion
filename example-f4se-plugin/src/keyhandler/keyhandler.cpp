@@ -14,9 +14,9 @@ void KeyHandler::RegisterSink()
     auto* menuControls = RE::MenuControls::GetSingleton();
     if (menuControls) {
         menuControls->handlers.push_back(GetSingleton());
-        logger::info("KeyHandler: Registered into MenuControls::handlers.");
+        REX::INFO("KeyHandler: Registered into MenuControls::handlers.");
     } else {
-        logger::error("KeyHandler: MenuControls singleton is null — input sink not registered.");
+        REX::CRITICAL("KeyHandler: MenuControls singleton is null — input sink not registered.");
     }
 }
 

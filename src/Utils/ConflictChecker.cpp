@@ -174,12 +174,12 @@ namespace PrismaUI::ConflictChecker {
         }
 
         // B2: Vtable integrity check
-        auto* rendererData = RE::BSGraphics::RendererData::GetSingleton();
+        auto* rendererData = RE::BSGraphics::GetRendererData();
         if (!rendererData || !rendererData->renderWindow[0].swapChain) {
             logger::warn("[ConflictChecker] CheckPreHooks: cannot get IDXGISwapChain for vtable check"
                          " — skipping vtable integrity check");
         } else {
-            IDXGISwapChain* swapChain = rendererData->renderWindow[0].swapChain;
+            auto* swapChain = rendererData->renderWindow[0].swapChain;
             void** vtable = *reinterpret_cast<void***>(swapChain);
 
             // Determine dxgi.dll address range

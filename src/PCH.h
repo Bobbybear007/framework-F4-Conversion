@@ -3,23 +3,13 @@
 #pragma warning(push)
 #include <RE/Fallout.h>
 #include <F4SE/F4SE.h>
-
-#include <fstream>
-
-#ifdef NDEBUG
-#   include <spdlog/sinks/basic_file_sink.h>
-#else
-#   include <spdlog/sinks/msvc_sink.h>
-#endif
+#include <spdlog/spdlog.h>
 #pragma warning(pop)
 
 using namespace std::literals;
 
-namespace logger = F4SE::log;
-
-namespace util
-{
-    using F4SE::stl::report_and_fail;
-}
+// NewCommonLib (xmake) removed F4SE::log. spdlog is a public dependency of
+// commonlib-shared and exposes the same free-function API (info/warn/error/critical).
+namespace logger = spdlog;
 
 #define DLLEXPORT __declspec(dllexport)

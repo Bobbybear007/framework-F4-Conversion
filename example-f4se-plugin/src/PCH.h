@@ -6,10 +6,13 @@
 #include <F4SE/F4SE.h>
 #pragma warning(pop)
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
-
 using namespace std::literals;
-namespace logger = F4SE::log;
+
+// Logging via REX macros (NewCommonLib):
+//   REX::INFO("msg {}", val);
+//   REX::WARN("msg {}", val);
+//   REX::ERROR("msg {}", val);
+// Log file is created automatically by F4SE::Init() at:
+//   %USERPROFILE%\Documents\My Games\Fallout4\F4SE\<pluginName>.log
 
 #define DLLEXPORT __declspec(dllexport)

@@ -171,14 +171,14 @@ namespace PrismaUI::Core {
     }
 
     void InitGraphics() {
-        auto* rendererData = RE::BSGraphics::RendererData::GetSingleton();
+        auto* rendererData = RE::BSGraphics::GetRendererData();
         if (!rendererData) {
             logger::critical("InitGraphics: BSGraphics::RendererData is null!");
             return;
         }
 
-        if (!d3dDevice)  d3dDevice  = rendererData->device;
-        if (!d3dContext) d3dContext = rendererData->context;
+        if (!d3dDevice)  d3dDevice  = reinterpret_cast<ID3D11Device*>(rendererData->device);
+        if (!d3dContext) d3dContext = reinterpret_cast<ID3D11DeviceContext*>(rendererData->context);
 
         if (!hWnd && rendererData->renderWindow[0].hwnd) {
             hWnd = reinterpret_cast<HWND>(rendererData->renderWindow[0].hwnd);

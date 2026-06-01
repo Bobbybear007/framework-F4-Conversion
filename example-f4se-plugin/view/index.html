@@ -2,325 +2,475 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PrismaUI F4 — Bridge Example</title>
+    <title>PrismaUI F4 — Full API Guide</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-        }
-
-        html {
-            background-color: transparent !important;
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        html, body {
             background: transparent !important;
-        }
-        body {
-            background-color: transparent !important;
-            background: transparent !important;
-        }
-
-        body {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
             font-family: 'Segoe UI', sans-serif;
         }
-
         .panel {
-            width: 500px;
-            background: rgba(18, 18, 22, 0.97);
+            width: 600px;
+            background: rgba(14,14,18,0.97);
             border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+            border-radius: 6px; overflow: hidden;
+            box-shadow: 0 12px 50px rgba(0,0,0,0.7);
+            display: flex; flex-direction: column;
         }
-
-        /* ── Header ── */
         .panel-header {
-            padding: 12px 16px;
+            padding: 11px 16px;
             background: rgba(255,255,255,0.04);
             border-bottom: 1px solid rgba(255,255,255,0.07);
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            display: flex; align-items: center; gap: 10px; flex-shrink: 0;
         }
-
-        .panel-header-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #3b82f6;
-            box-shadow: 0 0 6px #3b82f6;
+        .dot { width:8px; height:8px; border-radius:50%; background:#3b82f6; box-shadow:0 0 6px #3b82f6; }
+        .panel-title { font-size:12px; font-weight:600; color:rgba(255,255,255,0.85); letter-spacing:0.03em; }
+        .panel-sub   { font-size:11px; color:rgba(255,255,255,0.28); margin-left:auto; }
+        .tab-bar {
+            display:flex; border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;
         }
-
-        .panel-header-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: rgba(255,255,255,0.85);
-            letter-spacing: 0.03em;
+        .tab-btn {
+            flex:1; padding:9px 0; font-size:10px; font-weight:600;
+            letter-spacing:0.1em; text-transform:uppercase;
+            color:rgba(255,255,255,0.3); background:none; border:none;
+            border-bottom:2px solid transparent; cursor:pointer;
+            transition:color 0.12s,border-color 0.12s;
         }
-
-        .panel-header-sub {
-            font-size: 11px;
-            color: rgba(255,255,255,0.3);
-            margin-left: auto;
-        }
-
-        /* ── Body ── */
-        .panel-body {
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        /* ── Card ── */
+        .tab-btn:hover  { color:rgba(255,255,255,0.55); }
+        .tab-btn.active { color:#3b82f6; border-bottom-color:#3b82f6; }
+        .tab-panel { padding:14px 16px; display:none; flex-direction:column; gap:12px; }
+        .tab-panel.active { display:flex; }
         .card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 4px;
-            padding: 12px 14px;
+            background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
+            border-radius:4px; padding:12px 14px; display:flex; flex-direction:column; gap:10px;
         }
-
         .card-label {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: rgba(255,255,255,0.3);
-            margin-bottom: 8px;
+            font-size:10px; font-weight:600; letter-spacing:0.12em;
+            text-transform:uppercase; color:rgba(255,255,255,0.28);
         }
-
-        /* ── Status row ── */
-        .status-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        .card-desc { font-size:11px; color:rgba(255,255,255,0.38); line-height:1.65; }
+        .card-desc code {
+            font-family:'Consolas',monospace; color:rgba(255,255,255,0.6);
+            background:rgba(255,255,255,0.06); padding:1px 4px; border-radius:2px;
         }
-
+        .status-row { display:flex; align-items:center; gap:8px; }
         .badge {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: 3px;
+            font-size:10px; font-weight:600; letter-spacing:0.08em;
+            text-transform:uppercase; padding:2px 8px; border-radius:3px; white-space:nowrap;
         }
-
-        .badge-blue  { background: rgba(59,130,246,0.15); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); }
-        .badge-green { background: rgba(34,197,94,0.15);  color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
-        .badge-amber { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
-
-        .status-text {
-            font-size: 12px;
-            color: rgba(255,255,255,0.55);
+        .badge-green { background:rgba(34,197,94,0.15);  color:#22c55e; border:1px solid rgba(34,197,94,0.3); }
+        .badge-amber { background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); }
+        .badge-red   { background:rgba(239,68,68,0.12);  color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+        .badge-gray  { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.3); border:1px solid rgba(255,255,255,0.1); }
+        .status-text { font-size:12px; color:rgba(255,255,255,0.5); }
+        .form-grid   { display:grid; gap:8px; }
+        .form-grid-2 { grid-template-columns:1fr 1fr; }
+        .field { display:flex; flex-direction:column; gap:4px; }
+        .field-label {
+            font-size:10px; font-weight:600; letter-spacing:0.08em;
+            text-transform:uppercase; color:rgba(255,255,255,0.22);
         }
-
-        /* ── Event log ── */
-        .log {
-            font-size: 11px;
-            font-family: 'Consolas', 'Courier New', monospace;
-            color: rgba(255,255,255,0.45);
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-            min-height: 52px;
-        }
-
-        .log-entry {
-            display: flex;
-            gap: 8px;
-        }
-
-        .log-time { color: rgba(255,255,255,0.2); flex-shrink: 0; }
-        .log-dir  { flex-shrink: 0; }
-        .log-dir.in  { color: #3b82f6; }
-        .log-dir.out { color: #22c55e; }
-        .log-msg  { color: rgba(255,255,255,0.6); word-break: break-all; }
-
-        .log-empty {
-            color: rgba(255,255,255,0.18);
-            font-style: italic;
-        }
-
-        /* ── JS → C++ send row ── */
-        .send-row {
-            display: flex;
-            gap: 8px;
-        }
-
         input[type="text"] {
-            flex: 1;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 4px;
-            color: rgba(255,255,255,0.8);
-            font-family: 'Consolas', monospace;
-            font-size: 12px;
-            padding: 7px 10px;
-            outline: none;
+            background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+            border-radius:3px; color:rgba(255,255,255,0.8);
+            font-family:'Consolas',monospace; font-size:12px;
+            padding:6px 9px; outline:none; width:100%;
         }
-
-        input[type="text"]::placeholder { color: rgba(255,255,255,0.2); }
-
-        input[type="text"]:focus {
-            border-color: rgba(59,130,246,0.5);
-            background: rgba(59,130,246,0.05);
-        }
-
+        input::placeholder { color:rgba(255,255,255,0.18); }
+        input:focus { border-color:rgba(59,130,246,0.5); background:rgba(59,130,246,0.04); }
+        .btn-row { display:flex; gap:8px; align-items:center; }
         button {
-            background: rgba(59,130,246,0.15);
-            border: 1px solid rgba(59,130,246,0.35);
-            border-radius: 4px;
-            color: #3b82f6;
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            padding: 7px 14px;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background 0.12s;
+            background:rgba(59,130,246,0.14); border:1px solid rgba(59,130,246,0.32);
+            border-radius:3px; color:#3b82f6; font-family:inherit; font-size:11px;
+            font-weight:600; letter-spacing:0.05em; padding:6px 13px;
+            cursor:pointer; white-space:nowrap; transition:background 0.12s;
         }
-
-        button:hover  { background: rgba(59,130,246,0.28); }
-        button:active { background: rgba(59,130,246,0.45); }
-
-        button.close-btn {
-            background: rgba(239,68,68,0.12);
-            border-color: rgba(239,68,68,0.3);
-            color: #ef4444;
+        button:hover  { background:rgba(59,130,246,0.26); }
+        button:active { background:rgba(59,130,246,0.42); }
+        button.g { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.3); color:#22c55e; }
+        button.g:hover  { background:rgba(34,197,94,0.24); }
+        button.g:active { background:rgba(34,197,94,0.4);  }
+        button.r { background:rgba(239,68,68,0.12); border-color:rgba(239,68,68,0.28); color:#ef4444; }
+        button.r:hover  { background:rgba(239,68,68,0.24); }
+        button.r:active { background:rgba(239,68,68,0.4);  }
+        .result-row { display:flex; align-items:center; gap:8px; }
+        .result-label {
+            font-size:10px; font-weight:600; letter-spacing:0.08em;
+            text-transform:uppercase; color:rgba(255,255,255,0.22); flex-shrink:0;
         }
-
-        button.close-btn:hover  { background: rgba(239,68,68,0.25); }
-        button.close-btn:active { background: rgba(239,68,68,0.4); }
-
-        /* ── Footer ── */
+        .rv { font-family:'Consolas',monospace; font-size:12px; color:rgba(255,255,255,0.3); font-style:italic; }
+        .rv.ok      { color:#22c55e; font-style:normal; }
+        .rv.error   { color:#ef4444; font-style:normal; }
+        .rv.waiting { color:#f59e0b; font-style:italic; }
+        hr.d { border:none; border-top:1px solid rgba(255,255,255,0.06); }
+        .log {
+            font-size:11px; font-family:'Consolas',monospace;
+            display:flex; flex-direction:column; gap:3px;
+            min-height:60px; max-height:200px; overflow:hidden;
+        }
+        .log-entry { display:flex; gap:8px; }
+        .lt  { color:rgba(255,255,255,0.18); flex-shrink:0; }
+        .ld  { flex-shrink:0; }
+        .ld.cj { color:#3b82f6; } .ld.jc { color:#22c55e; }
+        .ld.po { color:#a78bfa; } .ld.pi { color:#f59e0b; }
+        .lm  { color:rgba(255,255,255,0.55); word-break:break-all; }
+        .le  { color:rgba(255,255,255,0.16); font-style:italic; }
         .panel-footer {
-            padding: 9px 16px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding:9px 16px; border-top:1px solid rgba(255,255,255,0.06);
+            display:flex; justify-content:space-between; align-items:center; flex-shrink:0;
         }
-
-        .hint {
-            font-size: 10px;
-            color: rgba(255,255,255,0.2);
-            letter-spacing: 0.06em;
-        }
-
+        .hint { font-size:10px; color:rgba(255,255,255,0.2); letter-spacing:0.05em; }
         .hint kbd {
-            color: rgba(255,255,255,0.45);
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 3px;
-            padding: 1px 5px;
-            font-family: inherit;
+            color:rgba(255,255,255,0.42); background:rgba(255,255,255,0.07);
+            border:1px solid rgba(255,255,255,0.12); border-radius:2px;
+            padding:1px 5px; font-family:inherit;
         }
+        .sr { display:flex; gap:8px; } .sr input { flex:1; }
     </style>
 </head>
 <body>
-    <div class="panel">
-        <div class="panel-header">
-            <div class="panel-header-dot"></div>
-            <div class="panel-header-title">PrismaUI F4 — Bridge Example</div>
-            <div class="panel-header-sub">C++ ↔ JS</div>
-        </div>
+<div class="panel">
 
-        <div class="panel-body">
-
-            <!-- Focus state (driven by C++ via Invoke) -->
-            <div class="card">
-                <div class="card-label">Focus State — set from C++ via Invoke()</div>
-                <div class="status-row">
-                    <div class="badge badge-amber" id="focus-badge">UNFOCUSED</div>
-                    <div class="status-text" id="focus-label">Press F3 to give this view input focus</div>
-                </div>
-            </div>
-
-            <!-- Event log -->
-            <div class="card">
-                <div class="card-label">Bridge Event Log</div>
-                <div class="log" id="log">
-                    <div class="log-empty">No events yet.</div>
-                </div>
-            </div>
-
-            <!-- JS → C++ send -->
-            <div class="card">
-                <div class="card-label">JS → C++ — fires sendDataToF4SE() via BindUIEvent</div>
-                <div class="send-row">
-                    <input id="data-input" type="text" placeholder="Message to send to plugin..." />
-                    <button onclick="sendInputData()">Send</button>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="panel-footer">
-            <div class="hint"><kbd>F3</kbd> Toggle · Check F4SE log for received data</div>
-            <button class="close-btn" onclick="closePanel()">Close</button>
-        </div>
+    <div class="panel-header">
+        <div class="dot"></div>
+        <div class="panel-title">PrismaUI F4 — Full API Guide</div>
+        <div class="panel-sub" id="hdr">checking…</div>
     </div>
 
-    <script>
-        const logEl = document.getElementById('log');
-        let logEmpty = true;
+    <div class="tab-bar">
+        <button class="tab-btn active" id="tbP" onclick="tab('p')">Papyrus Bridge</button>
+        <button class="tab-btn"        id="tbB" onclick="tab('b')">C++ Bridge</button>
+        <button class="tab-btn"        id="tbL" onclick="tab('l')">Event Log</button>
+    </div>
 
-        function appendLog(direction, message) {
-            if (logEmpty) { logEl.innerHTML = ''; logEmpty = false; }
-            const now = new Date();
-            const t = now.toTimeString().slice(0,8);
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `<span class="log-time">${t}</span>`
-                            + `<span class="log-dir ${direction === 'in' ? 'in' : 'out'}">${direction === 'in' ? 'C++→JS' : 'JS→C++'}</span>`
-                            + `<span class="log-msg">${message}</span>`;
-            logEl.appendChild(entry);
-            if (logEl.children.length > 6) logEl.removeChild(logEl.children[0]);
-        }
+    <!-- TAB: Papyrus Bridge -->
+    <div class="tab-panel active" id="tp">
 
-        // Called from C++ via: api->Invoke(view, "init()")
-        // Fires once when the DOM is ready.
-        window.init = () => {
-            appendLog('in', 'init() — DOM ready');
-        };
+        <div class="card">
+            <div class="card-label">window.prisma — injected automatically by PrismaUI_F4</div>
+            <div class="card-desc">
+                PrismaUI_F4 injects <code>window.prisma</code> on every view before your
+                <code>OnDomReadyCallback</code> fires. <strong>No C++ required in your plugin.</strong>
+                Read and write Papyrus <code>Auto</code> properties and <code>TESGlobal</code>
+                values directly from JavaScript. Reads return Promises; writes are fire-and-forget.
+            </div>
+            <div class="status-row">
+                <div class="badge badge-gray" id="paBadge">CHECKING</div>
+                <div class="status-text" id="paText">Waiting for init()…</div>
+            </div>
+        </div>
 
-        // Called from C++ via: api->Invoke(view, "updateFocusLabel('...')")
-        window.updateFocusLabel = (msg) => {
-            const focused = msg.includes('Focused');
-            document.getElementById('focus-label').textContent = msg;
-            const badge = document.getElementById('focus-badge');
-            badge.textContent = focused ? 'FOCUSED' : 'UNFOCUSED';
-            badge.className = 'badge ' + (focused ? 'badge-green' : 'badge-amber');
-            appendLog('in', `updateFocusLabel("${msg}")`);
-        };
+        <div class="card">
+            <div class="card-label">TESGlobal — read / write a global variable form</div>
+            <div class="card-desc">
+                <code>const val = await prisma.getGlobal(esp, formId)</code> → <code>number | null</code><br>
+                <code>prisma.setGlobal(esp, formId, value)</code> → fire-and-forget float write<br><br>
+                <code>formId</code> is the local hex ID without the file-index byte.
+                A form at <code>0x00000800</code> in <code>MyMod.esp</code> is written as <code>"800"</code>.
+                ESL forms use the same convention — PrismaUI_F4 resolves the ESL prefix automatically via
+                <code>TESDataHandler::LookupForm</code>.
+            </div>
+            <div class="form-grid form-grid-2">
+                <div class="field">
+                    <div class="field-label">Plugin (.esp / .esl)</div>
+                    <input id="gbEsp" type="text" placeholder="MyMod.esp" />
+                </div>
+                <div class="field">
+                    <div class="field-label">Local Form ID (hex)</div>
+                    <input id="gbFid" type="text" placeholder="800" />
+                </div>
+            </div>
+            <div class="btn-row">
+                <button onclick="doGetGlobal()">Read Global</button>
+                <div class="result-row">
+                    <div class="result-label">Result:</div>
+                    <div class="rv" id="gbRes">— awaiting —</div>
+                </div>
+            </div>
+            <hr class="d">
+            <div class="form-grid">
+                <div class="field">
+                    <div class="field-label">New value (float)</div>
+                    <input id="gbVal" type="text" placeholder="1.5" />
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="g" onclick="doSetGlobal()">Write Global</button>
+                <span style="font-size:11px;color:rgba(255,255,255,0.22)">Uses esp / formId above. Read back to confirm.</span>
+            </div>
+        </div>
 
-        // Sends JSON to C++ BindUIEvent("sendDataToF4SE").
-        // C++ side uses GetJsonString(data, "message") from PrismaUI_F4_Helper.h to parse.
-        function sendInputData() {
-            const val = document.getElementById('data-input').value.trim();
-            if (!val) return;
-            const payload = JSON.stringify({ message: val });
-            appendLog('out', `sendDataToF4SE(${payload})`);
-            window.sendDataToF4SE(payload);
-            document.getElementById('data-input').value = '';
-        }
+        <div class="card">
+            <div class="card-label">Papyrus Auto Property — read / write a script property on any form</div>
+            <div class="card-desc">
+                <code>const val = await prisma.getProperty(esp, formId, scriptName, propName)</code><br>
+                <code>prisma.setProperty(esp, formId, scriptName, propName, value)</code><br><br>
+                The form must have <code>scriptName</code> attached with the property declared <code>Auto</code>.
+                Quest forms are the most reliable host — they persist across cell changes.
+                Supports <code>float</code>, <code>int</code>, <code>bool</code> only (no strings, no arrays).
+                Writes coerce your value to the property's declared type automatically.
+                Always call after <code>kPostLoadGame</code> — the Papyrus VM is not ready before that.
+            </div>
+            <div class="form-grid form-grid-2">
+                <div class="field">
+                    <div class="field-label">Plugin (.esp / .esl)</div>
+                    <input id="gpEsp"    type="text" placeholder="MyMod.esp" />
+                </div>
+                <div class="field">
+                    <div class="field-label">Local Form ID (hex)</div>
+                    <input id="gpFid"    type="text" placeholder="800" />
+                </div>
+                <div class="field">
+                    <div class="field-label">Script name</div>
+                    <input id="gpScript" type="text" placeholder="MyMod_QuestScript" />
+                </div>
+                <div class="field">
+                    <div class="field-label">Property name</div>
+                    <input id="gpProp"   type="text" placeholder="DamageScale" />
+                </div>
+            </div>
+            <div class="btn-row">
+                <button onclick="doGetProp()">Read Property</button>
+                <div class="result-row">
+                    <div class="result-label">Result:</div>
+                    <div class="rv" id="gpRes">— awaiting —</div>
+                </div>
+            </div>
+            <hr class="d">
+            <div class="form-grid">
+                <div class="field">
+                    <div class="field-label">New value (float / int / bool)</div>
+                    <input id="gpVal" type="text" placeholder="2.5" />
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="g" onclick="doSetProp()">Write Property</button>
+                <span style="font-size:11px;color:rgba(255,255,255,0.22)">Uses the four fields above. Read back to confirm.</span>
+            </div>
+        </div>
 
-        // Close button — fires BindUIEvent("requestClose") in C++.
-        function closePanel() {
-            appendLog('out', 'requestClose()');
-            window.requestClose();
-        }
+        <div class="card">
+            <div class="card-label">null return — when and why</div>
+            <div class="card-desc">
+                Both read functions return <code>null</code> (never throw) when:<br>
+                • Plugin not in the active load order<br>
+                • Form ID does not exist in that plugin<br>
+                • Form exists but wrong type (not <code>TESGlobal</code>, or script not attached)<br>
+                • Property not declared <code>Auto</code> or name mismatch<br>
+                • Papyrus VM not yet ready (called before <code>kPostLoadGame</code>)<br><br>
+                Always guard: <code>if (val === null) { /* missing or not loaded */ }</code>
+            </div>
+        </div>
 
-        // Allow Enter key to send
-        document.getElementById('data-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') sendInputData();
+    </div>
+
+    <!-- TAB: C++ Bridge -->
+    <div class="tab-panel" id="tb">
+
+        <div class="card">
+            <div class="card-label">C++ → JS — Invoke() and InteropCall()</div>
+            <div class="card-desc">
+                <code>api-&gt;Invoke(view, "fnName(args)")</code> — evaluates a JS expression.
+                Higher overhead; use for one-shot calls like init and infrequent UI updates.<br>
+                <code>api-&gt;InteropCall(view, "fnName", jsonArg)</code> — calls a named
+                <code>window</code> function directly. Lower overhead; use for per-frame or
+                repeated data pushes. Both auto-convert ANSI game strings to UTF-8.<br><br>
+                The focus badge below is driven by C++ calling
+                <code>Invoke(view, "updateFocusLabel('...')")</code>.
+            </div>
+            <div class="status-row">
+                <div class="badge badge-amber" id="focusBadge">UNFOCUSED</div>
+                <div class="status-text" id="focusLabel">Press F3 to give this view input focus</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">JS → C++ — BindUIEvent()</div>
+            <div class="card-desc">
+                <code>api-&gt;BindUIEvent(view, "eventName", callback)</code> exposes a named function
+                on <code>window</code> that JS calls like any other function.<br>
+                The callback fires on the <strong>game thread</strong> —
+                <code>RE::</code> access is safe directly inside it. No <code>AddTask</code> needed.<br><br>
+                The input below fires <code>window.sendDataToF4SE(payload)</code>; the plugin
+                logs the received message. Check:<br>
+                <code style="font-size:10px">%USERPROFILE%\Documents\My Games\Fallout4\F4SE\PrismaUI-F4-Example-Plugin.log</code>
+            </div>
+            <div class="sr">
+                <input id="msgIn" type="text" placeholder="Message to send to the plugin…" />
+                <button onclick="sendMsg()">Send</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">RegisterJSListener() — Ultralight-thread callback</div>
+            <div class="card-desc">
+                An alternative to <code>BindUIEvent</code> whose callback fires on the
+                <strong>Ultralight render thread</strong> instead of the game thread.<br>
+                Use when you need low-latency response or direct JSCore access. For any
+                <code>RE::</code> access inside such a callback, marshal to the game thread:<br>
+                <code>F4SE::GetTaskInterface()-&gt;AddTask([](){ /* safe here */ });</code><br><br>
+                Always register inside <code>OnDomReadyCallback</code> — not before DOM ready.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">View lifecycle — call-timing rules</div>
+            <div class="card-desc">
+                <code>RequestPluginAPI&lt;IVPrismaUI4&gt;()</code> → on <code>kGameDataReady</code><br>
+                <code>CreateView()</code> → on <code>kPostLoadGame</code> or <code>kNewGame</code><br>
+                <code>RegisterJSListener()</code> → inside <code>OnDomReadyCallback</code> only<br>
+                <code>Hide(view)</code> → immediately after <code>CreateView</code> unless you want it visible<br>
+                <code>IsValid(view)</code> → always check after a game reload before using a stored handle<br><br>
+                Violating these timings causes null crashes or silent no-ops.
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TAB: Event Log -->
+    <div class="tab-panel" id="tl">
+
+        <div class="card">
+            <div class="card-label">Bridge Event Log</div>
+            <div class="card-desc" style="margin-bottom:2px">
+                <span style="color:#a78bfa">prisma→</span> JS called prisma &nbsp;·&nbsp;
+                <span style="color:#f59e0b">←prisma</span> result back &nbsp;·&nbsp;
+                <span style="color:#3b82f6">C++→JS</span> Invoke/InteropCall &nbsp;·&nbsp;
+                <span style="color:#22c55e">JS→C++</span> BindUIEvent
+            </div>
+            <div class="log" id="log">
+                <div class="le">No events yet. Use the Papyrus Bridge or C++ Bridge tabs.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">console.log → F4SE log file</div>
+            <div class="card-desc">
+                Register a <code>ConsoleMessageCallback</code> in <code>OnDomReadyCallback</code>
+                to capture <code>console.log</code>, <code>console.warn</code>, and
+                <code>console.error</code> from your view HTML. Messages appear in the plugin's F4SE
+                log file — the primary debugging tool for HTML view code. Always register during development.
+            </div>
+            <div class="btn-row">
+                <button onclick="testConsole()">Fire test console.log → check F4SE log</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="panel-footer">
+        <div class="hint"><kbd>F3</kbd> Toggle · Check F4SE log for plugin output</div>
+        <button class="r" onclick="closePanel()">Close</button>
+    </div>
+
+</div>
+<script>
+    function tab(n) {
+        ['p','b','l'].forEach(function(x) {
+            document.getElementById('t'+x).classList.remove('active');
+            document.getElementById('tb'+x.toUpperCase()).classList.remove('active');
         });
-    </script>
+        document.getElementById('t'+n).classList.add('active');
+        document.getElementById('tb'+n.toUpperCase()).classList.add('active');
+    }
+
+    var logEl = document.getElementById('log'), logEmpty = true;
+    function lg(cls, label, msg) {
+        if (logEmpty) { logEl.innerHTML = ''; logEmpty = false; }
+        var t = new Date().toTimeString().slice(0,8);
+        var e = document.createElement('div');
+        e.className = 'log-entry';
+        e.innerHTML = '<span class="lt">'+t+'</span><span class="ld '+cls+'">'+label+'</span><span class="lm">'+msg+'</span>';
+        logEl.appendChild(e);
+        if (logEl.children.length > 30) logEl.removeChild(logEl.children[0]);
+    }
+    function rv(id, s, t) { var e=document.getElementById(id); e.className='rv '+s; e.textContent=t; }
+
+    function doGetGlobal() {
+        var esp=document.getElementById('gbEsp').value.trim(), fid=document.getElementById('gbFid').value.trim();
+        if (!esp||!fid) { rv('gbRes','error','enter esp and formId'); return; }
+        if (!window.prisma) { rv('gbRes','error','window.prisma not available'); return; }
+        rv('gbRes','waiting','…');
+        lg('po','prisma→','getGlobal("'+esp+'","'+fid+'")');
+        window.prisma.getGlobal(esp,fid).then(function(v) {
+            if (v===null||v===undefined) { rv('gbRes','error','null — plugin absent or form not found'); lg('pi','←prisma','null'); }
+            else { rv('gbRes','ok',String(v)); lg('pi','←prisma',''+v); }
+        });
+    }
+    function doSetGlobal() {
+        var esp=document.getElementById('gbEsp').value.trim(), fid=document.getElementById('gbFid').value.trim();
+        var raw=document.getElementById('gbVal').value.trim(), v=parseFloat(raw);
+        if (!esp||!fid||raw===''||isNaN(v)) { lg('po','prisma→','setGlobal: missing/invalid fields'); return; }
+        if (!window.prisma) { lg('po','prisma→','window.prisma not available'); return; }
+        lg('po','prisma→','setGlobal("'+esp+'","'+fid+'",'+v+')');
+        window.prisma.setGlobal(esp,fid,v);
+    }
+    function doGetProp() {
+        var esp=document.getElementById('gpEsp').value.trim(), fid=document.getElementById('gpFid').value.trim();
+        var scr=document.getElementById('gpScript').value.trim(), prp=document.getElementById('gpProp').value.trim();
+        if (!esp||!fid||!scr||!prp) { rv('gpRes','error','fill in all four fields'); return; }
+        if (!window.prisma) { rv('gpRes','error','window.prisma not available'); return; }
+        rv('gpRes','waiting','…');
+        lg('po','prisma→','getProperty("'+esp+'","'+fid+'","'+scr+'","'+prp+'")');
+        window.prisma.getProperty(esp,fid,scr,prp).then(function(v) {
+            if (v===null||v===undefined) { rv('gpRes','error','null — form/script/prop not found or VM not ready'); lg('pi','←prisma','null'); }
+            else { rv('gpRes','ok',String(v)); lg('pi','←prisma',''+v); }
+        });
+    }
+    function doSetProp() {
+        var esp=document.getElementById('gpEsp').value.trim(), fid=document.getElementById('gpFid').value.trim();
+        var scr=document.getElementById('gpScript').value.trim(), prp=document.getElementById('gpProp').value.trim();
+        var raw=document.getElementById('gpVal').value.trim();
+        if (!esp||!fid||!scr||!prp||raw==='') { lg('po','prisma→','setProperty: missing fields'); return; }
+        if (!window.prisma) { lg('po','prisma→','window.prisma not available'); return; }
+        lg('po','prisma→','setProperty("'+esp+'","'+fid+'","'+scr+'","'+prp+'",'+raw+')');
+        window.prisma.setProperty(esp,fid,scr,prp,raw);
+    }
+
+    window.init = function() {
+        if (window.prisma) {
+            document.getElementById('paBadge').className='badge badge-green';
+            document.getElementById('paBadge').textContent='AVAILABLE';
+            document.getElementById('paText').textContent='window.prisma injected — ready to use';
+            document.getElementById('hdr').textContent='prisma ready';
+        } else {
+            document.getElementById('paBadge').className='badge badge-red';
+            document.getElementById('paBadge').textContent='NOT FOUND';
+            document.getElementById('paText').textContent='window.prisma missing — is PrismaUI_F4 running?';
+            document.getElementById('hdr').textContent='no prisma';
+        }
+        lg('cj','C++→JS','init() — DOM ready');
+    };
+
+    window.updateFocusLabel = function(msg) {
+        var focused = msg.indexOf('Focused') !== -1;
+        document.getElementById('focusLabel').textContent = msg;
+        var b = document.getElementById('focusBadge');
+        b.textContent = focused ? 'FOCUSED' : 'UNFOCUSED';
+        b.className   = 'badge ' + (focused ? 'badge-green' : 'badge-amber');
+        lg('cj','C++→JS','updateFocusLabel("'+msg+'")');
+    };
+
+    function sendMsg() {
+        var val = document.getElementById('msgIn').value.trim();
+        if (!val) return;
+        var p = JSON.stringify({message:val});
+        lg('jc','JS→C++','sendDataToF4SE('+p+')');
+        window.sendDataToF4SE(p);
+        document.getElementById('msgIn').value = '';
+    }
+    function closePanel() { lg('jc','JS→C++','requestClose()'); window.requestClose(); }
+    function testConsole() {
+        console.log('[PrismaUI Example] console.log test — check F4SE log');
+        console.warn('[PrismaUI Example] console.warn test');
+        lg('jc','JS→C++','console.log + console.warn fired');
+    }
+
+    document.getElementById('msgIn').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') sendMsg();
+    });
+</script>
 </body>
 </html>

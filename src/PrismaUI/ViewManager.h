@@ -54,4 +54,9 @@ namespace PrismaUI::ViewManager {
     // Translations — inject window.L10N / window.t before page scripts run.
     // pluginName is the bare plugin name matching the translation filename, e.g. "MyPlugin_F4".
     void RegisterTranslations(const Core::PrismaViewId& viewId, const std::string& pluginName);
+
+    // Enumerate all currently-registered views. Callback receives (id, htmlPath) for each view,
+    // where htmlPath is the original relative path passed to Create (e.g., "debug_panel.html").
+    // Snapshot is taken under the shared lock; callback is invoked outside the lock.
+    void EnumerateViews(std::function<void(Core::PrismaViewId, const std::string&)> callback);
 }

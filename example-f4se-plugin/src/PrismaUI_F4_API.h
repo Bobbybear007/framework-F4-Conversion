@@ -174,16 +174,15 @@ namespace PRISMA_UI_API {
     /// Recommended: Send your request during or after F4SE::MessagingInterface::kGameDataReady to make sure the dll
     /// has already been loaded.
     [[nodiscard]] inline void* RequestPluginAPI(InterfaceVersion a_interfaceVersion = InterfaceVersion::V3) {
-        // NOTE (F4SE/CommonLibF4 builds): CommonLibF4's WinAPI.h #undef's GetModuleHandle
-        // and GetProcAddress and re-declares them as F4SE::WinAPI::GetModuleHandle etc.
-        // This copy of PrismaUI_F4_API.h uses the full qualification to remain compatible.
-        auto pluginHandle = F4SE::WinAPI::GetModuleHandle(L"PrismaUI_F4.dll");
+        // NewCommonLib (xmake-based) uses REX::W32 instead of F4SE::WinAPI.
+        // Raw Win32 calls work with both old and new CommonLib builds.
+        auto pluginHandle = ::GetModuleHandleW(L"PrismaUI_F4.dll");
         if (!pluginHandle) {
             return nullptr;
         }
 
         auto requestAPIFunction =
-            reinterpret_cast<RequestPluginAPIFunc>(F4SE::WinAPI::GetProcAddress(pluginHandle, "RequestPluginAPI"));
+            reinterpret_cast<RequestPluginAPIFunc>(::GetProcAddress(pluginHandle, "RequestPluginAPI"));
 
         if (requestAPIFunction) {
             return requestAPIFunction(a_interfaceVersion);

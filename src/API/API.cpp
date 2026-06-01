@@ -283,3 +283,12 @@ void PluginAPI::PrismaUIInterface::BindUIEvent(PrismaView view, const char* func
 
 	PrismaUI::Communication::RegisterJSListener(view, functionName, wrapped);
 }
+
+void PluginAPI::PrismaUIInterface::EnumerateViews(PRISMA_UI_API::ViewEnumCallback callback,
+                                                   void* userdata) noexcept
+{
+	if (!callback) return;
+	PrismaUI::ViewManager::EnumerateViews([callback, userdata](PrismaUI::Core::PrismaViewId id, const std::string& path) {
+		callback(static_cast<PrismaView>(id), path.c_str(), userdata);
+	});
+}

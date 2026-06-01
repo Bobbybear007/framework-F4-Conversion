@@ -1,25 +1,32 @@
 -- example-f4se-plugin/xmake.lua
-add_requires("spdlog", "fmt", "boost")
+--
+-- Uses NewCommonLib (E:\F4SE OG\Prisma\NewCommonLib), the xmake-based CommonLibF4.
+-- Build NewCommonLib first: cd into it and run `xmake`.
+-- Set XSE_FO4_MODS_PATH or XSE_FO4_GAME_PATH env vars to auto-deploy on `xmake install`.
+
+-- NewCommonLib pulls spdlog v1.16.0 (wchar+std_format) internally via its own
+-- add_requires. Do NOT add a separate spdlog requirement here — version or config
+-- conflicts with the sub-project's requirement cause LOG.cpp compile errors.
+includes("../../../Prisma/NewCommonLib")
 
 target("PrismaUI-F4-Example-Plugin")
     set_kind("shared")
     set_languages("c++23")
     set_filename("PrismaUI-F4-Example-Plugin.dll")
 
-    add_includedirs("../../../CommonLibF4_OG/CommonLibF4/include")
-    add_includedirs("../../../CommonLibF4_OG/lib/mmio/include")
+    -- commonlibf4.plugin rule: generates F4SE_PLUGIN_VERSION data and sets install path
+    -- from XSE_FO4_MODS_PATH / XSE_FO4_GAME_PATH env vars.
+    add_rules("commonlibf4.plugin", {
+        name    = "PrismaUI-F4-Example-Plugin",
+        author  = "PrismaUI",
+        version = "1.0.0"
+    })
+
     add_includedirs("src")
-
     add_files("src/**.cpp")
-    add_packages("boost", "spdlog", "fmt")
-
-    add_linkdirs("../../../CommonLibF4_OG/build/windows/x64/release")
-    add_links("commonlibf4", "mmio")
 
     set_pcxxheader("src/PCH.h")
 
-    add_defines("WINVER=0x0601", "_WIN32_WINNT=0x0601")
-    add_defines("F4SE_SUPPORT_820")
     add_defines("WIN32_LEAN_AND_MEAN", "NOMINMAX")
 
     if is_plat("windows") then

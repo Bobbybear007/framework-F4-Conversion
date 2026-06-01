@@ -57,6 +57,9 @@ public:
 		virtual void BindUIEvent(PrismaView view, const char* functionName,
 		                         PRISMA_UI_API::JSListenerCallback callback) noexcept override;
 
+		virtual void EnumerateViews(PRISMA_UI_API::ViewEnumCallback callback,
+		                            void* userdata) noexcept override;
+
 	private:
 		unsigned long apiTID = 0;
 	};

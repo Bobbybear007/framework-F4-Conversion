@@ -4,5 +4,7 @@ dist/
 *.suo
 .vs/
 .idea/
+.xmake/
+*.pdb
 build_out.txt
 build_err.txt

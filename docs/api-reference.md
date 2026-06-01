@@ -586,11 +586,3 @@ The framework injects a security script into every view **before any page script
 ### Audit logging
 
 All network-source console messages (CSP violations, blocked resource loads) are written to the PrismaUI_F4 spdlog output at `warn` level, prefixed `[PrismaUI Security]`.
-
----
-
-## Related: PrismaMCM (no C++ required)
-
-If your goal is a settings screen that binds controls to Papyrus auto-properties or TESGlobal forms, PrismaMCM handles this entirely from a `config.json` file — no C++ plugin required on your end.
-
-See [prismamcm.md](prismamcm.md) for the full reference.
