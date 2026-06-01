@@ -347,3 +347,39 @@ Logs are written to:
 JavaScript `console.log()`, `console.warn()`, and `console.error()` calls appear in the log if you registered a `ConsoleMessageCallback` (see the `CreateViews` example above). Always register this callback during development.
 
 Open the Ultralight inspector for live DOM debugging: see [docs/view-lifecycle.md](view-lifecycle.md#inspector).
+
+---
+
+## Papyrus Bridge — zero C++ required
+
+If you only need to read and write mod settings from an HTML view, you don't need a C++ plugin at all. PrismaUI_F4 injects `window.prisma` into every view before `OnDomReadyCallback` fires.
+
+**Papyrus script (in the Creation Kit):**
+
+```papyrus
+Scriptname MyMod_QuestScript extends Quest
+
+float Property DamageScale = 1.0 Auto
+bool  Property HardcoreMode = false Auto
+int   Property Difficulty   = 1 Auto
+```
+
+Attach this script to a Quest form (e.g. form ID `0x800` in `MyMod.esp`).
+
+**HTML view:**
+
+```html
+<script>
+  // Runs after DOM ready — window.prisma is already available.
+  async function loadSettings() {
+    const dmg = await prisma.getProperty("MyMod.esp", "800", "MyMod_QuestScript", "DamageScale");
+    if (dmg !== null) document.getElementById("damage").value = dmg;
+  }
+
+  function saveDamage(val) {
+    prisma.setProperty("MyMod.esp", "800", "MyMod_QuestScript", "DamageScale", parseFloat(val));
+  }
+</script>
+```
+
+No `RequestPluginAPI`, no view handle, no C++. See [api-reference.md](api-reference.md#window-prisma--papyrus-bridge) for the full reference.
