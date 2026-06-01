@@ -24,7 +24,7 @@ add_requires("directxtk")
 -- version+configs here makes it available for direct inclusion in PCH.h.
 add_requires("spdlog v1.16.0", { configs = { header_only = false, wchar = true, std_format = true } })
 
-includes("../NewCommonLib")
+includes("lib/commonlibf4")
 
 -- Ultralight SDK paths (cmake extracts the 7z here on first configure)
 local UL_ROOT      = "$(projectdir)/build/external_builds/ultralight"

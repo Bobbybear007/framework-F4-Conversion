@@ -1,13 +1,14 @@
 -- example-f4se-plugin/xmake.lua
 --
--- Uses NewCommonLib (E:\F4SE OG\Prisma\NewCommonLib), the xmake-based CommonLibF4.
--- Build NewCommonLib first: cd into it and run `xmake`.
--- Set XSE_FO4_MODS_PATH or XSE_FO4_GAME_PATH env vars to auto-deploy on `xmake install`.
+-- CommonLibF4 is included as a submodule at lib/commonlibf4.
+-- Clone with:  git clone --recurse-submodules https://github.com/NomadsReach/framework-F4-Conversion
+-- Then build:  xmake -P example-f4se-plugin
+--
+-- Optional deploy env vars:
+--   XSE_FO4_MODS_PATH  — MO2 mods folder root
+--   XSE_FO4_GAME_PATH  — Fallout 4 Data folder
 
--- NewCommonLib pulls spdlog v1.16.0 (wchar+std_format) internally via its own
--- add_requires. Do NOT add a separate spdlog requirement here — version or config
--- conflicts with the sub-project's requirement cause LOG.cpp compile errors.
-includes("../../../Prisma/NewCommonLib")
+includes("../lib/commonlibf4")
 
 target("PrismaUI-F4-Example-Plugin")
     set_kind("shared")
