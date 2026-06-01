@@ -54,8 +54,9 @@ target("PrismaUI_F4")
     add_includedirs(UL_INCLUDE)
     add_linkdirs(UL_LIB)
     add_links("AppCore", "Ultralight", "UltralightCore", "WebCore")
-    -- Delay-load so Ultralight DLLs can be loaded from a non-system path at runtime
-    add_ldflags(
+    -- Delay-load so Ultralight DLLs can be loaded from a non-system path at runtime.
+    -- add_shflags targets the DLL linker (shared library); add_ldflags only hits exe targets.
+    add_shflags(
         "/DELAYLOAD:UltralightCore.dll",
         "/DELAYLOAD:WebCore.dll",
         "/DELAYLOAD:Ultralight.dll",
