@@ -34,6 +34,11 @@ local UL_LIB       = UL_ROOT .. "/lib"
 local UL_BIN       = UL_ROOT .. "/bin"
 local UL_RESOURCES = UL_ROOT .. "/resources"
 
+if not os.isdir(UL_INCLUDE) then
+    raise("Ultralight SDK not found at:\n  " .. UL_ROOT ..
+          "\n\nRun setup.bat first to extract the SDK:\n  setup.bat")
+end
+
 target("PrismaUI_F4")
     set_kind("shared")
     set_filename("PrismaUI_F4.dll")
@@ -41,9 +46,10 @@ target("PrismaUI_F4")
     -- F4SE plugin version data auto-generated from these fields.
     -- Log file: %USERPROFILE%\Documents\My Games\Fallout4\F4SE\PrismaUI_F4.log
     add_rules("commonlibf4.plugin", {
-        name    = "PrismaUI_F4",
-        author  = "PrismaUI",
-        version = "1.0.0"
+        name            = "PrismaUI_F4",
+        author          = "PrismaUI",
+        version         = "1.0.0",
+        plugin_template = path.join(os.scriptdir(), "res/commonlibf4-plugin.cpp.in")
     })
 
     -- Sources
