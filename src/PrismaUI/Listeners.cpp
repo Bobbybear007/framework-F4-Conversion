@@ -3,6 +3,7 @@
 #include "Communication.h"
 #include "Core.h"
 #include "NetworkSandbox.h"
+#include "PapyrusBridge.h"
 #include "PrismaUI_F4_API.h"
 #include "Translations.h"
 
@@ -64,6 +65,9 @@ namespace PrismaUI::Listeners {
             else
                 logger::debug("View [{}]: Network sandbox injected.", viewId_);
         }
+
+        // ── Papyrus bridge — window.prisma ───────────────────────────────────────
+        PapyrusBridge::InjectBridge(caller, viewId_);
 
         std::shared_lock lock(viewsMutex);
         auto it = views.find(viewId_);
