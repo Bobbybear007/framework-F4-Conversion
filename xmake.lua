@@ -119,14 +119,18 @@ target("PrismaUI_F4")
             os.cp(assets_src, path.join(distdir, "PrismaUI_F4"))
         end
 
-        -- Ultralight 1.4.0 resources + binaries
+        -- Ultralight 1.4.0 resources + binaries (copy contents, not the directory itself)
         local ul_res = path.join(os.scriptdir(), "build", "ultralight-1.4.0", "resources")
         local ul_bin = path.join(os.scriptdir(), "build", "ultralight-1.4.0", "bin")
+        local dest_res = path.join(distdir, "PrismaUI_F4", "resources")
+        local dest_libs = path.join(distdir, "PrismaUI_F4", "libs")
         if os.isdir(ul_res) then
-            os.cp(ul_res, path.join(distdir, "PrismaUI_F4", "resources"))
+            os.mkdir(dest_res)
+            os.cp(ul_res .. "/*", dest_res)
         end
         if os.isdir(ul_bin) then
-            os.cp(ul_bin, path.join(distdir, "PrismaUI_F4", "libs"))
+            os.mkdir(dest_libs)
+            os.cp(ul_bin .. "/*", dest_libs)
         end
 
         print("Distribution ready: dist/PrismaUI_F4_" .. ver)
