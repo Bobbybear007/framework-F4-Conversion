@@ -586,37 +586,37 @@ Toggle (key press):
 
 ## window.prisma — Papyrus Bridge
 
-PrismaUI_F4 automatically injects `window.prisma` into every view before `OnDomReadyCallback` fires. No C++ plugin code is required — Papyrus modders can read and write game data directly from JavaScript.
+`window.prisma` is automatically injected into every view during `OnWindowObjectReady`, before any page scripts execute. No C++ plugin code is required — read and write game data directly from JavaScript.
 
 ### Methods
 
 | Method | Returns | Description |
 |---|---|---|
-| `prisma.getGlobal(esp, formId)` | `Promise<number \| null>` | Read a `TESGlobal` form's float value |
-| `prisma.setGlobal(esp, formId, value)` | `void` | Write a `TESGlobal` form's float value |
+| `prisma.getGlobal(esp, formId)` | `Promise<number \| null>` | Read a `TESGlobal` value |
+| `prisma.setGlobal(esp, formId, value)` | `void` | Write a `TESGlobal` value |
 | `prisma.getProperty(esp, formId, scriptName, propName)` | `Promise<number \| boolean \| null>` | Read a Papyrus `Auto` property |
 | `prisma.setProperty(esp, formId, scriptName, propName, value)` | `void` | Write a Papyrus `Auto` property |
 
 **Parameters:**
 
-- `esp` — plugin filename including extension, e.g. MyMod.esp or MyMod.esl
-- `formId` — local hex form ID without the file-index byte — "800" means 0x00000800 in the plugin
-- `scriptName` — exact name of the Papyrus script attached to the form (case-insensitive)
-- `propName` — exact name of the `Auto` property declared on that script (case-insensitive)
-
-Reads return Promises. Writes are fire-and-forget.
+- `esp` — plugin filename including extension, e.g. `"MyMod.esp"` or `"MyMod.esl"`
+- `formId` — local hex form ID, no file-index byte — `"800"` means `0x00000800` inside the plugin
+- `scriptName` — Papyrus script name attached to the form (case-insensitive)
+- `propName` — `Auto` property name on that script (case-insensitive)
 
 ### Example
 
 ```js
-// Read a TESGlobal
+// Read a TESGlobal — always await, always guard null
 const diff = await prisma.getGlobal("MyMod.esp", "801");
+if (diff === null) return; // plugin not loaded or form not found
 
 // Write a TESGlobal
 prisma.setGlobal("MyMod.esp", "801", 3.0);
 
 // Read a Papyrus Auto property
 const dmg = await prisma.getProperty("MyMod.esp", "800", "MyMod_QuestScript", "DamageScale");
+if (dmg === null) return;
 
 // Write a Papyrus Auto property
 prisma.setProperty("MyMod.esp", "800", "MyMod_QuestScript", "DamageScale", 2.5);
@@ -624,24 +624,24 @@ prisma.setProperty("MyMod.esp", "800", "MyMod_QuestScript", "DamageScale", 2.5);
 
 ### Null return
 
-Both read methods return `null` (never throw) when:
+Read methods return `null` and never throw when:
 - The plugin is not in the active load order
 - The form ID does not exist in that plugin
-- The form exists but is the wrong type (not `TESGlobal`, or script not attached)
-- The property name is not found or not declared `Auto`
-- The Papyrus VM is not yet ready — always call after `kPostLoadGame`
+- The form is not the expected type (`TESGlobal`, or script not attached to form)
+- The property name is not found on the script
+- The Papyrus VM is not ready (called before `kPostLoadGame`)
 
-Always guard: `if (val === null) { /* missing or not loaded */ }`
+Always guard: `if (val === null) { return; }`
 
 ### Supported property types
 
-`float`, `int`, `bool` only. Strings and arrays are not supported in v1. Writes coerce the incoming value to the property's declared type automatically.
+`float`, `int`, `bool` only. Strings and arrays are not supported. Writes coerce the incoming JS value to the property's declared Papyrus type automatically.
 
 ### Requirements
 
-- The form must have the named script attached and the VM must be initialized. Quest forms are the most reliable host — they persist across cell changes.
-- Always call after `kPostLoadGame`. `window.prisma` exists from DOM ready, but the Papyrus VM is not ready until the game is loaded.
-- No C++ plugin required. `window.prisma` is available in every view created by any plugin using PrismaUI_F4 V1 or later.
+- `window.prisma` exists from DOM ready, but the game data is not available until `kPostLoadGame`. Don't call reads during page init — call them in response to data pushed from C++ or user interaction.
+- Quest forms are the most reliable script host — they persist across cell changes and fast travel.
+- No C++ changes required. `window.prisma` is injected automatically into every view regardless of interface version (V1–V4).
 
 ---
 
