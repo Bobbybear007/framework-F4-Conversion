@@ -10,4 +10,4 @@ if errorlevel 1 (
 
 xmake f -m release -y
 if errorlevel 1 exit /b 1
-xmake build PrismaUI-F4-Example-Plugin
+xmake build
