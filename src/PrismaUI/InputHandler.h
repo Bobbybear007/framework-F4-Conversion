@@ -53,4 +53,10 @@ namespace PrismaUI::InputHandler {
 
     void ProcessEvents();
     void Shutdown();
+
+    // Register a callback that is tested against every WM_LBUTTONDOWN BEFORE
+    // PrismaUI input capture and before Scaleform/game input routing.
+    // cb(clientX, clientY) → return true to consume the click (Scaleform won't see it).
+    using OverlayClickCallback = std::function<bool(int x, int y)>;
+    void RegisterOverlayClickHandler(OverlayClickCallback cb);
 }

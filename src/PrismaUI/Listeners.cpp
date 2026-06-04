@@ -55,6 +55,10 @@ namespace PrismaUI::Listeners {
         if (!is_main_frame) return;
         logger::info("View [{}]: LoadListener: Window object ready.", viewId_);
 
+        // ── Inject window.prisma Papyrus bridge ──────────────────────────────────
+        // Runs BEFORE page scripts so JS code can access window.prisma from load time.
+        PapyrusBridge::InjectBridge(caller, viewId_);
+
         // ── Network sandbox (Layer 1: JS kill + Layer 2: CSP meta) ─────────────────
         // Runs BEFORE page scripts. configurable:false descriptors cannot be reversed.
         {
@@ -66,14 +70,11 @@ namespace PrismaUI::Listeners {
                 logger::debug("View [{}]: Network sandbox injected.", viewId_);
         }
 
-        // ── Papyrus bridge — window.prisma ───────────────────────────────────────
-        PapyrusBridge::InjectBridge(caller, viewId_);
-
         std::shared_lock lock(viewsMutex);
         auto it = views.find(viewId_);
-        if (it == views.end() || !it->second || it->second->translationsPluginName.empty()) return;
+        if (it == views.end() || !it->second || it->second->translationPluginName.empty()) return;
 
-        std::string pluginName = it->second->translationsPluginName;
+        std::string pluginName = it->second->translationPluginName;
         lock.unlock();
 
         auto lang = Translations::DetectGameLanguage();

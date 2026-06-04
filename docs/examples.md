@@ -1,36 +1,31 @@
 # Examples
 
-Copy-paste patterns for common PrismaUI_F4 integration scenarios.
+Real, tested patterns extracted from PrismaInventory_F4 and PrismaShowcase_F4.
 
 ---
 
 ## 1. Minimal Toggle Menu
 
-The simplest possible plugin: one view, one hotkey, show/hide.
+The simplest possible plugin: one view, one hotkey, show/hide with game pause.
 
-**C++:**
+**C++ (main.cpp):**
 ```cpp
 #include "PrismaUI_F4_API.h"
 #include "KeyHandler.h"
+#include <spdlog/sinks/basic_file_sink.h>
 
-static PRISMA_UI_API::IVPrismaUI4* g_api  = nullptr;
+static PRISMA_UI_API::IVPrismaUI3* g_api  = nullptr;
 static PrismaView                   g_view = 0;
 static bool                         g_visible = false;
 
 static void OnDomReady(PrismaView view) {
-    g_api->RegisterConsoleCallback(view,
-        [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel, const char* msg) {
-            logger::info("[JS] {}", msg);
-        });
-
-    // BindUIEvent — fires on game thread, RE:: access safe directly
-    g_api->BindUIEvent(view, "requestClose", [](const char*) {
+    g_api->RegisterJSListener(view, "requestClose", [](const char*) {
+        // No RE:: access — safe to call PrismaUI directly here
         g_visible = false;
         g_api->Unfocus(g_view);
         g_api->Hide(g_view);
     });
-
-    g_api->Invoke(view, "init()");
+    logger::info("DOM ready");
 }
 
 static void Toggle() {
@@ -38,7 +33,7 @@ static void Toggle() {
     g_visible = !g_visible;
     if (g_visible) {
         g_api->Show(g_view);
-        g_api->Focus(g_view, /*pauseGame=*/true);
+        g_api->Focus(g_view, true, false);  // pauseGame=true
     } else {
         g_api->Unfocus(g_view);
         g_api->Hide(g_view);
@@ -48,15 +43,19 @@ static void Toggle() {
 static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg) {
     switch (msg->type) {
     case F4SE::MessagingInterface::kGameDataReady:
-        g_api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI4>();
-        if (!g_api) { logger::error("PrismaUI_F4 not found"); return; }
+        g_api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI3>();
         KeyHandler::RegisterSink();
         KeyHandler::GetSingleton()->Register(0x43, KeyEventType::KEY_DOWN, Toggle); // F9
         break;
     case F4SE::MessagingInterface::kPostLoadGame:
     case F4SE::MessagingInterface::kNewGame:
-        if (g_api && (!g_view || !g_api->IsValid(g_view))) {
-            g_view = g_api->CreateView("Interface/MyPlugin/menu.html", OnDomReady);
+        if (g_api && g_view == 0) {
+            g_view = g_api->CreateView("mymenu.html", OnDomReady);
+            g_api->RegisterConsoleCallback(g_view,
+                [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel lvl, const char* msg) {
+                    logger::info("[JS] {}", msg);
+                });
+            g_api->RegisterTranslations(g_view, "MyPlugin_F4");
             g_api->Hide(g_view);
         }
         break;
@@ -64,10 +63,10 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg) {
 }
 ```
 
-**HTML:**
+**HTML (mymenu.html):**
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head><meta charset="UTF-8">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -77,18 +76,21 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg) {
   .panel { background:rgba(0,0,0,0.9); border:1px solid #00661a;
            padding:40px; color:#00ff41; text-align:center; }
   button { margin-top:20px; padding:10px 24px; background:transparent;
-           border:1px solid #00661a; color:#00ff41;
-           font-family:'Courier New',monospace; cursor:pointer; }
+           border:1px solid #00661a; color:#00ff41; font-family:'Courier New',monospace;
+           font-size:12px; cursor:pointer; letter-spacing:2px; }
   button:hover { background:rgba(0,255,65,0.1); }
 </style>
 </head>
 <body>
 <div class="panel">
-  <h2>MY MENU</h2>
-  <button onclick="window.requestClose()">CLOSE</button>
+  <h2 style="letter-spacing:3px" id="title">MY MENU</h2>
+  <p style="margin-top:12px;color:#009921;font-size:11px">Game is paused.</p>
+  <button onclick="requestClose()">CLOSE</button>
 </div>
 <script>
-  window.init = () => console.log('menu ready');
+  console.log('mymenu ready');
+  // Use t() for localized strings if RegisterTranslations was called
+  // document.getElementById('title').textContent = t('ui.title');
 </script>
 </body>
 </html>
@@ -96,58 +98,16 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg) {
 
 ---
 
-## 2. JS → C++ with Game State (BindUIEvent)
+## 2. Pushing Structured Data to a View
 
-Use `BindUIEvent` when the callback needs to read or write game state. RE:: access is safe directly inside the callback — no `AddTask` needed.
+Push game data to the HTML page using `InteropCall` with JSON. Always call this from the game thread (inside `AddTask` or an F4SE message handler).
 
-**C++:**
+**C++ — build and push inventory:**
 ```cpp
-#include "PrismaUI_F4_API.h"
-#include "PrismaUI_F4_Helper.h"  // GetJsonString, GetJsonInt
+#include <nlohmann/json.hpp>  // or build JSON manually with sprintf
 
-static void OnDomReady(PrismaView view) {
-    // Receive item equip request from JS
-    g_api->BindUIEvent(view, "onItemEquip", [](const char* data) {
-        // Already on game thread — RE:: access is safe
-        uint32_t formId = static_cast<uint32_t>(
-            PRISMA_UI_HELPER::GetJsonInt(data ? data : "", "formId"));
-        auto* form = RE::TESForm::GetFormByID(formId);
-        if (!form) return;
-        logger::info("Equip: {}", form->GetFullName());
-        // ... apply equip logic
-    });
-
-    // Receive a simple message string
-    g_api->BindUIEvent(view, "sendMessage", [](const char* data) {
-        std::string msg = PRISMA_UI_HELPER::GetJsonString(data ? data : "", "text");
-        logger::info("From JS: {}", msg);
-    });
-}
-```
-
-**JS:**
-```javascript
-// Equip button click
-document.getElementById('equipBtn').onclick = function() {
-    window.onItemEquip(JSON.stringify({ formId: 0x1234 }));
-};
-
-// Text input send
-document.getElementById('sendBtn').onclick = function() {
-    const text = document.getElementById('input').value;
-    window.sendMessage(JSON.stringify({ text }));
-};
-```
-
----
-
-## 3. Pushing Structured Data to a View
-
-Push game data to the HTML page using `InteropCall` with JSON.
-
-**C++:**
-```cpp
 static void PushInventoryData(PrismaView view) {
+    // Must be called on game thread — RE:: access requires it
     auto* player = RE::PlayerCharacter::GetSingleton();
     if (!player) return;
 
@@ -167,93 +127,190 @@ static void PushInventoryData(PrismaView view) {
 }
 ```
 
-**JS:**
-```javascript
+**HTML — receive and render:**
+```html
+<div id="list"></div>
+<script>
 function loadInventory(jsonStr) {
-    const items = JSON.parse(jsonStr);
-    const list  = document.getElementById('list');
-    list.innerHTML = items.map(item =>
-        `<div class="row">
-           <span class="name">${escapeHtml(item.name)}</span>
-           <span class="count">x${item.count}</span>
-         </div>`
-    ).join('');
+  var items = JSON.parse(jsonStr);
+  var html = '';
+  items.forEach(function(item) {
+    html += '<div class="row">'
+          + '<span class="name">' + escapeHtml(item.name) + '</span>'
+          + '<span class="count">x' + item.count + '</span>'
+          + '</div>';
+  });
+  document.getElementById('list').innerHTML = html;
 }
 
 function escapeHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+</script>
 ```
 
 ---
 
-## 4. Translations (RegisterTranslations)
+## 3. Receiving Events from JavaScript
 
-Load Fallout 4 translation files and expose them as `window.t()` in your page.
+The JS → C++ direction uses `RegisterJSListener`. Callbacks fire on the **Ultralight render thread** — if you need `RE::` access, dispatch via `AddTask`.
 
-**C++ — register immediately after CreateView:**
+**C++ — register multiple listeners:**
 ```cpp
-case F4SE::MessagingInterface::kPostLoadGame:
-case F4SE::MessagingInterface::kNewGame:
-    if (g_api && (!g_view || !g_api->IsValid(g_view))) {
-        g_view = g_api->CreateView("Interface/MyPlugin/menu.html", OnDomReady);
-        g_api->RegisterTranslations(g_view, "MyPlugin_F4");  // must be before DOM ready
+static void OnDomReady(PrismaView view) {
+    // Safe: no RE:: access, just UI state
+    g_api->RegisterJSListener(view, "requestClose", [](const char*) {
+        g_api->Unfocus(g_view);
         g_api->Hide(g_view);
-    }
-    break;
+        g_visible = false;
+    });
+
+    // Safe: logging only — no RE::
+    g_api->RegisterJSListener(view, "onSettingChanged", [](const char* json) {
+        logger::info("Setting: {}", json);
+        // Parse and apply without RE::, or dispatch to game thread:
+        std::string j = json;
+        F4SE::GetTaskInterface()->AddTask([j]() {
+            // Apply setting via RE:: here if needed
+        });
+    });
+
+    // CORRECT: RE:: access dispatched to game thread
+    g_api->RegisterJSListener(view, "onItemSelected", [](const char* formIdStr) {
+        std::string s = formIdStr ? formIdStr : "";
+        F4SE::GetTaskInterface()->AddTask([s]() {
+            uint32_t formId = std::stoul(s, nullptr, 16);
+            auto* form = RE::TESForm::GetFormByID(formId);
+            if (form) logger::info("Selected: {}", form->GetFullName());
+        });
+    });
+}
 ```
 
-**Translation file** (`Data/Interface/Translations/MyPlugin_F4_en.txt`, UTF-16 LE with BOM):
-```
-$MENU_TITLE	My Plugin
-$CLOSE_BTN	Close
-$ITEM_LABEL	Item: {0}
-```
-
-**JS — use `window.t()` anywhere in the page:**
+**HTML — call from buttons and inputs:**
 ```javascript
-document.getElementById('title').textContent  = window.t('$MENU_TITLE');
-document.getElementById('close').textContent  = window.t('$CLOSE_BTN');
+// Close
+document.getElementById('closeBtn').onclick = function() {
+  requestClose();
+};
 
-// For keys not found, t() returns the key itself — safe to call unconditionally
-console.log(window.t('$MISSING_KEY')); // → "$MISSING_KEY"
+// Setting slider
+document.getElementById('hungerSlider').oninput = function() {
+  onSettingChanged(JSON.stringify({ key: 'hungerRate', value: this.value }));
+};
+
+// Item click
+document.querySelectorAll('.item-row').forEach(function(el) {
+  el.onclick = function() {
+    onItemSelected(this.dataset.formid);
+  };
+});
 ```
 
-The framework auto-detects the game language from INI files. If `MyPlugin_F4_de.txt` exists and the game is set to German, German strings are injected. Falls back to `en` if the language file is not found.
+---
+
+## 4. Querying Game Data from a JS Listener
+
+The full round-trip pattern: JS asks for data → C++ dispatches to game thread → reads RE:: → sends result back to JS.
+
+```cpp
+// C++ — in OnDomReady
+g_api->RegisterJSListener(view, "requestPlayerStats", [](const char* /*arg*/) {
+    // Ultralight thread — dispatch to game thread for RE:: access
+    F4SE::GetTaskInterface()->AddTask([]() {
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        if (!player || !g_api || !g_api->IsValid(g_view)) return;
+
+        std::string json = "{"
+            "\"hp\":"  + std::to_string((int)player->GetActorValue(RE::ActorValue::kHealth)) +
+            ",\"ap\":" + std::to_string((int)player->GetActorValue(RE::ActorValue::kActionPoints)) +
+            ",\"name\":\"" + std::string(player->GetFullName()) + "\""
+            "}";
+        g_api->InteropCall(g_view, "onPlayerStats", json.c_str());
+    });
+});
+```
+
+```javascript
+// JS — trigger from a button
+document.getElementById('refreshBtn').onclick = function() {
+  requestPlayerStats(); // fires C++ listener
+};
+
+// JS — receive result
+function onPlayerStats(json) {
+  var d = JSON.parse(json);
+  document.getElementById('hp').textContent = d.hp;
+  document.getElementById('ap').textContent = d.ap;
+}
+```
 
 ---
 
 ## 5. Reading a Value Back from JS
 
-`Invoke` with a callback pulls a value from the page's JS state.
+`Invoke` with a callback lets you pull a value from the page's JS state. The callback fires on the game thread.
 
 ```cpp
+// Ask the page what the current slider value is
 g_api->Invoke(view,
     "document.getElementById('volumeSlider').value",
     [](const char* result) {
-        int volume = std::atoi(result ? result : "0");
+        // Game thread — safe for RE:: access
+        int volume = std::atoi(result);
         logger::info("Volume is {}", volume);
     });
 ```
 
-For passing complex state back, have JS call a `BindUIEvent` listener — it is cleaner than parsing `Invoke` results.
+For passing complex state back, have JS call a listener instead — it's cleaner than parsing Invoke results.
 
 ---
 
-## 6. Four Views, Four Keys
+## 6. Translations (V3)
 
-Managing multiple views from a single plugin.
+`RegisterTranslations` injects `window.t()` and `window.L10N` into the page. Call it once after `CreateView`.
+
+**Translation file** (`Data\Interface\Translations\MyPlugin_F4_en.txt`):
+```
+ui.title	MY MENU
+ui.close	CLOSE
+ui.hp	Health
+ui.ap	Action Points
+```
+
+**C++:**
+```cpp
+// kPostLoadGame / kNewGame
+g_view = g_api->CreateView("mymenu.html", OnDomReady);
+g_api->RegisterTranslations(g_view, "MyPlugin_F4");  // must match the filename prefix
+```
+
+**HTML:**
+```html
+<script>
+  // t() returns the translated string, or the key if not found
+  document.getElementById('title').textContent = t('ui.title');
+  document.getElementById('closeBtn').textContent = t('ui.close');
+
+  // L10N is the raw key→value map
+  console.log(L10N['ui.title']);
+</script>
+```
+
+Translations are re-injected automatically on each subsequent page load — call `RegisterTranslations` once per view.
+
+---
+
+## 7. Four Views, Four Keys (Showcase Pattern)
+
+Managing multiple views from a single plugin. Each view is independent.
 
 ```cpp
-static constexpr uint32_t       KEYS[4]  = { 0x43, 0x44, 0x57, 0x58 };
-static constexpr const char*    FILES[4] = {
-    "Interface/MyPlugin/levelup.html",
-    "Interface/MyPlugin/mcm.html",
-    "Interface/MyPlugin/companion.html",
-    "Interface/MyPlugin/terminal.html"
-};
+static constexpr uint32_t KEYS[4]        = { 0x43, 0x44, 0x57, 0x58 }; // F9-F12
+static constexpr const char* FILES[4]    = { "levelup.html", "mcm.html",
+                                              "companion.html", "terminal.html" };
 
-static PRISMA_UI_API::IVPrismaUI4* g_api      = nullptr;
+static PRISMA_UI_API::IVPrismaUI3* g_api    = nullptr;
 static PrismaView                   g_views[4] = {};
 static bool                         g_visible[4] = {};
 
@@ -262,7 +319,7 @@ static void Toggle(int idx) {
     g_visible[idx] = !g_visible[idx];
     if (g_visible[idx]) {
         g_api->Show(g_views[idx]);
-        g_api->Focus(g_views[idx], true);
+        g_api->Focus(g_views[idx], true, false);
     } else {
         g_api->Unfocus(g_views[idx]);
         g_api->Hide(g_views[idx]);
@@ -271,38 +328,58 @@ static void Toggle(int idx) {
 
 static void CreateViews() {
     for (int i = 0; i < 4; i++) {
-        if (g_views[i] && g_api->IsValid(g_views[i])) continue;
+        if (g_views[i] != 0) continue;
         g_views[i] = g_api->CreateView(FILES[i], nullptr);
         g_api->RegisterConsoleCallback(g_views[i],
             [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel, const char* msg) {
                 logger::info("[JS] {}", msg);
             });
+        g_api->RegisterTranslations(g_views[i], "MyPlugin_F4");
         g_api->Hide(g_views[i]);
+    }
+}
+
+static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg) {
+    switch (msg->type) {
+    case F4SE::MessagingInterface::kGameDataReady:
+        g_api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI3>();
+        KeyHandler::RegisterSink();
+        for (int i = 0; i < 4; i++) {
+            KeyHandler::GetSingleton()->Register(KEYS[i], KeyEventType::KEY_DOWN,
+                [i]() { Toggle(i); });
+        }
+        break;
+    case F4SE::MessagingInterface::kPostLoadGame:
+    case F4SE::MessagingInterface::kNewGame:
+        if (g_api) CreateViews();
+        break;
     }
 }
 ```
 
 ---
 
-## 7. Z-Ordering Two Overlapping Views
+## 8. Z-Ordering Two Overlapping Views
 
 ```cpp
 // Background HUD — always visible, no focus, low z-order
-g_hudView = g_api->CreateView("Interface/MyPlugin/hud.html", nullptr);
+g_hudView = g_api->CreateView("hud.html", nullptr);
 g_api->SetOrder(g_hudView, 0);
-g_api->Show(g_hudView);
+g_api->Show(g_hudView);  // visible but unfocused
 
 // Popup menu — appears on top of HUD when opened
-g_menuView = g_api->CreateView("Interface/MyPlugin/menu.html", OnMenuReady);
+g_menuView = g_api->CreateView("menu.html", OnMenuReady);
 g_api->SetOrder(g_menuView, 10);
 g_api->Hide(g_menuView);
 ```
 
+The HUD renders continuously. When the menu is opened with `Show` + `Focus`, it renders over the HUD because its order value (10) is higher.
+
 ---
 
-## 8. Live HUD Updates
+## 9. Updating a HUD Each Second
 
-Push stats to a HUD on a recurring schedule.
+For a heads-up display that shows live stats, push updates from a recurring game-thread task. All `RE::` access is safe inside `AddTask`.
 
 ```cpp
 static void ScheduleHudUpdate() {
@@ -314,51 +391,59 @@ static void ScheduleHudUpdate() {
         auto* player = RE::PlayerCharacter::GetSingleton();
         if (!player) { ScheduleHudUpdate(); return; }
 
-        std::string json =
-            "{\"hp\":" + std::to_string((int)player->GetActorValue(RE::ActorValue::kHealth))
-          + ",\"ap\":" + std::to_string((int)player->GetActorValue(RE::ActorValue::kActionPoints))
-          + "}";
+        std::string json = "{\"hp\":" + std::to_string((int)player->GetActorValue(RE::ActorValue::kHealth))
+                         + ",\"ap\":" + std::to_string((int)player->GetActorValue(RE::ActorValue::kActionPoints))
+                         + "}";
         g_api->InteropCall(g_hudView, "updateStats", json.c_str());
-        ScheduleHudUpdate();
+
+        ScheduleHudUpdate();  // re-schedule
     });
 }
 ```
 
-Hook a game timer or tick event rather than a tight recursion loop in production.
+For a real HUD, hook the game's tick or use a 1-second timer rather than a tight recursion loop. The example above shows the pattern; adjust the scheduling mechanism to your needs.
 
 ---
 
-## 9. Inspector Setup (Development Only)
+## 10. Inspector Setup (Development Only)
 
 ```cpp
 #ifdef PRISMA_DEV
-api->CreateInspectorView(view);
-api->SetInspectorBounds(view, 960.0f, 0.0f, 960, 600);
-api->SetInspectorVisibility(view, true);
 
+static void SetupInspector(PrismaView view) {
+    g_api->CreateInspectorView(view);
+    // Position inspector on right half of a 1920-wide screen
+    g_api->SetInspectorBounds(view, 960.0f, 0.0f, 960, 600);
+    g_api->SetInspectorVisibility(view, true);
+}
+
+// Bind F12 to toggle inspector during dev
 KeyHandler::GetSingleton()->Register(0x58, KeyEventType::KEY_DOWN, []() {
-    api->SetInspectorVisibility(g_view, !api->IsInspectorVisible(g_view));
+    bool v = g_api->IsInspectorVisible(g_view);
+    g_api->SetInspectorVisibility(g_view, !v);
 });
+
 #endif
 ```
 
-Remove all `CreateInspectorView` calls before shipping.
+Remove all `CreateInspectorView` calls before releasing your mod.
 
 ---
 
-## 10. Error-Resilient View Creation
+## 11. Error-Resilient View Creation
 
 ```cpp
 static void CreateViews() {
     if (!g_api) {
-        logger::error("PrismaUI not available — is PrismaUI_F4.dll installed?");
+        logger::error("PrismaUI not available — is PrismaUI_F4.dll installed and loaded?");
         return;
     }
-    if (g_view && g_api->IsValid(g_view)) return;
+    if (g_view != 0) return;  // already created
 
-    g_view = g_api->CreateView("Interface/MyPlugin/menu.html", OnDomReady);
+    g_view = g_api->CreateView("mymenu.html", OnDomReady);
+
     if (!g_api->IsValid(g_view)) {
-        logger::error("View invalid immediately — check that the HTML path is correct");
+        logger::error("Created view is immediately invalid — check that mymenu.html exists in Data/PrismaUI_F4/views/");
         g_view = 0;
         return;
     }
@@ -370,12 +455,14 @@ static void CreateViews() {
             else
                 logger::info("[JS] {}", msg);
         });
+    g_api->RegisterTranslations(g_view, "MyPlugin_F4");
     g_api->Hide(g_view);
     logger::info("View created (id={})", g_view);
 }
 ```
 
-Common failure modes:
-- `g_api` is null → PrismaUI_F4 is not installed or the version is too old
-- `IsValid` is false immediately → HTML file path is wrong
-- JS errors in console → syntax errors or undefined functions in your page
+The most common failure modes:
+- `g_api` is null → PrismaUI_F4 is not installed or failed to load, or `RequestPluginAPI` was called before `kGameDataReady`
+- `IsValid` returns false immediately → the HTML file path is wrong
+- JS errors in console → check HTML/JS syntax errors, missing function guards
+- Game data listeners return no data → JS listener accessed `RE::` directly instead of dispatching via `AddTask`

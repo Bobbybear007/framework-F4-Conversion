@@ -11,13 +11,9 @@ A PrismaUI view moves through these states:
      ▼
 [loading]          ← Ultralight is fetching and parsing the HTML
      │
-     │  DOM parsed and JS executed
+     │  DOM parsed and JS executed → onDomReady fires on game thread
      ▼
-[ready + visible]  ← default state after creation (call Hide immediately!)
-     │
-     │  Hide()
-     ▼
-[ready + hidden]   ← typical idle state for toggle menus
+[ready + hidden]   ← default state after creation
      │
      │  Show()
      ▼
@@ -25,7 +21,7 @@ A PrismaUI view moves through these states:
      │
      │  Focus(view, pauseGame, disableFocusMenu)
      ▼
-[visible + focused]   ← mouse/keyboard routed to HTML, cursor shown
+[visible + focused]   ← mouse/keyboard routed to HTML, cursor active
      │
      │  Unfocus()
      ▼
@@ -46,19 +42,24 @@ A PrismaUI view moves through these states:
 
 ```cpp
 PrismaView view = api->CreateView("page.html", OnDomReady);
-api->Hide(view);   // views start hidden; this is redundant but explicit
+// View starts hidden — no Hide() call needed, but explicit is fine:
+// api->Hide(view);
 ```
 
-`CreateView` is asynchronous — the HTML file is loaded on the Ultralight thread. Your `OnDomReady` callback fires on the **main thread** (via `F4SE::GetTaskInterface()->AddTask`) after the DOM is parsed and all inline `<script>` blocks have executed.
+`CreateView` is asynchronous — the HTML file is loaded on the Ultralight thread. Your `OnDomReady` callback fires on the **main game thread** (via `F4SE::GetTaskInterface()->AddTask`) after the DOM is parsed and all inline `<script>` blocks have executed.
 
 **Do not call `Invoke` or `RegisterJSListener` before `OnDomReady` fires.** The JS context is not yet ready.
 
-**Create views on `kPostLoadGame` / `kNewGame`**, not on `kGameDataReady`. Example:
+**Create views on `kPostLoadGame` / `kNewGame`**, not on `kGameDataReady`:
 
 ```cpp
 case F4SE::MessagingInterface::kPostLoadGame:
 case F4SE::MessagingInterface::kNewGame:
-    if (g_view == 0 && g_api) CreateMyViews();
+    if (g_view == 0 && g_api) {
+        g_view = g_api->CreateView("page.html", OnDomReady);
+        g_api->RegisterConsoleCallback(g_view, consoleCallback);
+        g_api->RegisterTranslations(g_view, "MyPlugin_F4");
+    }
     break;
 ```
 
@@ -71,44 +72,53 @@ Guard with `g_view == 0` to avoid creating duplicates on multiple load events.
 ```cpp
 static void OnDomReady(PrismaView view)
 {
-    // RegisterConsoleCallback — capture JS errors during development
-    g_api->RegisterConsoleCallback(view,
-        [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel lvl, const char* msg) {
-            logger::info("[JS] {}", msg);
-        });
-
-    // BindUIEvent (V4) — fires on game thread, RE:: access safe directly
-    g_api->BindUIEvent(view, "onAction", [](const char* data) {
-        // RE:: access safe here
-    });
-
-    // RegisterJSListener — use for pure UI callbacks that don't need game state
-    g_api->RegisterJSListener(view, "onClose", [](const char*) {
-        g_api->Unfocus(g_view);
-        g_api->Hide(g_view);
-    });
-
+    // Fires on the main game thread — safe for RE:: access and JS calls
+    g_api->RegisterJSListener(view, "onClose", OnClose);
+    g_api->RegisterJSListener(view, "onDataRequest", OnDataRequest);
     g_api->Invoke(view, "init()");
     logger::info("DOM ready for view {}", view);
 }
 ```
 
-The callback fires on the **main game thread** (dispatched via `AddTask`). The view handle is passed so you can use one `OnDomReady` function for multiple views.
+The callback receives the view handle so one function can serve multiple views.
 
-**Do not call `Invoke`, `RegisterJSListener`, or `BindUIEvent` before this callback fires.** The JS context is not ready until then.
+---
+
+## JS Listener Threading
+
+`RegisterJSListener` callbacks fire on the **Ultralight render thread**, not the game thread.
+
+- Safe from a JS listener: calling `AddTask`, reading atomic variables, writing to a mutex-protected queue
+- Not safe: any `RE::*` singleton access, calling `InteropCall`/`Invoke` directly
+
+```cpp
+g_api->RegisterJSListener(view, "queryPlayer", [](const char* s) {
+    // WRONG — RE:: on Ultralight thread:
+    // auto hp = RE::PlayerCharacter::GetSingleton()->GetActorValue(...);
+
+    // CORRECT:
+    F4SE::GetTaskInterface()->AddTask([]() {
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        std::string result = std::to_string((int)player->GetActorValue(RE::ActorValue::kHealth));
+        g_api->InteropCall(g_view, "onPlayerHP", result.c_str());
+    });
+});
+```
+
+`OnDomReadyCallback` and `JSCallback` (from `Invoke`) are delivered on the game thread — no dispatch needed for those.
 
 ---
 
 ## Show / Hide
 
-`Show` and `Hide` control compositing — whether the view's pixels are included in the D3D11 Present call. They are **not** the same as `Focus`/`Unfocus`.
+`Show` and `Hide` control compositing — whether the view's pixels are included in the D3D11 Present call. They are not the same as `Focus`/`Unfocus`.
 
 | Operation | What it does |
 |-----------|-------------|
 | `Show` | View is rendered on screen |
 | `Hide` | View is invisible but JS keeps running |
-| `Focus` | Input (mouse + keyboard) goes to the view, cursor shown |
-| `Unfocus` | Input returns to game, cursor hidden |
+| `Focus` | Input (mouse + keyboard) goes to the view |
+| `Unfocus` | Input returns to game |
 
 Typical toggle pattern:
 
@@ -133,13 +143,26 @@ static void Toggle()
 
 ### `pauseGame`
 
-When `true`, the game's time scale is set to zero — NPCs stop moving, timers pause, projectiles freeze. Restored automatically on `Unfocus`. Use for menus where the player needs to interact without danger (inventory, settings, terminal).
+When `true`, the game's time scale is set to zero — NPCs stop moving, timers pause. Restored automatically on `Unfocus`. Use for menus that require exclusive player attention (inventory, settings, terminal).
 
-When `false`, the game continues running while the UI is open. Use for HUDs or overlays that don't require exclusive attention.
+When `false`, the game continues running while the UI is open. Use for overlays or menus opened from existing paused contexts (e.g. opening a sub-panel while PauseMenu is already open).
 
 ### `disableFocusMenu`
 
-Normally `false`. The FocusMenu is a Scaleform overlay the framework uses to route the game cursor to the HTML view. Setting this to `true` suppresses it, which can cause cursor visibility issues. Leave it `false` unless you have a specific technical reason.
+Controls whether PrismaUI's Scaleform FocusMenu overlay is shown:
+
+**`false` (default):** The FocusMenu overlay is active. It manages the game cursor and intercepts ESC to unfocus the view. Use this for standalone menus opened directly from gameplay — the overlay handles cursor visibility and ESC for you.
+
+**`true`:** The FocusMenu overlay is suppressed. Keyboard events reach the HTML `keydown` handler directly. The game's existing cursor (if any) remains active. Use this when your view opens on top of an existing game menu that already shows a cursor — for example, a panel opened while PauseMenu is open. In this case your JS must handle ESC:
+
+```javascript
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        e.preventDefault();
+        myCloseFunction(); // call your C++ listener to unfocus/hide
+    }
+});
+```
 
 ### `HasAnyActiveFocus`
 
@@ -150,54 +173,51 @@ if (api->HasAnyActiveFocus()) {
 }
 ```
 
-Use this in your hotkey handler to prevent accidental game actions (drawing weapons, etc.) while a menu is open.
-
 ---
 
 ## Multiple Views
 
-Each call to `CreateView` produces an independent view with its own Ultralight context, D3D11 textures, and JS environment. Views do not share state.
+Each `CreateView` call produces an independent view with its own Ultralight context, D3D11 textures, and JS environment. Views do not share state.
 
-**Ordering:** Views are composited in ascending `order` value. Default order is 0. If two views overlap, set the one that should appear on top to a higher order:
+**Ordering:** Views are composited in ascending `order` value. Default is 0:
 
 ```cpp
 api->SetOrder(backgroundView, 0);
 api->SetOrder(popupView, 10);
 ```
 
-**Focus:** Only one view can have focus at a time. Calling `Focus` on a second view while the first is focused will focus the second; the first loses focus.
+**Focus:** Only one view can have focus at a time. Calling `Focus` on a second view while the first is focused automatically unfocuses the first.
 
-**Performance:** Each active view costs GPU texture memory and Ultralight rendering time. Keep views hidden when not in use. Rendering is skipped for hidden views.
+**Performance:** Each active view costs GPU texture memory and Ultralight rendering time. Keep views hidden when not in use — rendering is skipped for hidden views.
 
 ---
 
 ## View Recovery
 
-PrismaUI_F4 has an internal recovery system. If the Ultralight thread throws a structured exception (SEH) while processing a view, the framework marks that view for recovery and reloads it from its original URL. Recovery attempts are limited to prevent infinite loops.
+PrismaUI_F4 has an internal recovery system. If the Ultralight thread throws a structured exception while processing a view, the framework marks that view for recovery and reloads it from its original URL. Recovery attempts are limited to prevent loops.
 
-You do not need to implement recovery logic in your plugin. If a view is behaving strangely after a long game session, check your F4SE log for recovery messages.
+You do not need to implement recovery logic. If a view behaves strangely, check the F4SE log for recovery messages.
 
 ---
 
 ## Inspector
 
-The Ultralight inspector is a WebKit DevTools interface. Use it during development to debug layout, run console queries, and inspect element styles.
+The Ultralight inspector is a WebKit DevTools interface.
 
 ```cpp
-// Setup (do once, do not ship to end users)
+// Setup (development only — do not ship)
 api->CreateInspectorView(view);
 api->SetInspectorBounds(view, 0.0f, 0.0f, 900, 550);
 
-// Toggle visibility
+// Toggle
 bool showing = api->IsInspectorVisible(view);
 api->SetInspectorVisibility(view, !showing);
 ```
 
-The inspector renders as an overlay at the position and size you specify. You can interact with it using the mouse while it's visible. The main view is still rendered beneath it.
-
-**Do not ship `CreateInspectorView` calls in released mods.** Wrap them in a debug flag or `#ifdef`:
+The inspector renders as an overlay at the position you specify. Interact with it using the mouse. The main view renders beneath it.
 
 ```cpp
+// Wrap in a debug flag
 #ifdef PRISMA_DEBUG
 api->CreateInspectorView(g_view);
 api->SetInspectorBounds(g_view, 10.0f, 10.0f, 900, 560);
@@ -209,7 +229,7 @@ api->SetInspectorVisibility(g_view, true);
 
 ## Destruction
 
-`Destroy` fully tears down a view. After calling it, the handle is invalid — do not use it again.
+`Destroy` fully tears down a view. After calling it, the handle is invalid.
 
 ```cpp
 api->Unfocus(view);
@@ -218,18 +238,14 @@ api->Destroy(view);
 view = 0;
 ```
 
-Destruction happens asynchronously on the Ultralight thread. Do not create a new view with the same filename immediately after destroying one; wait for the next `kPostLoadGame` event.
-
-In normal usage you never need to destroy views — create them once on `kPostLoadGame` and keep them for the session.
+In normal usage, never destroy views — create them once on `kPostLoadGame` and keep them for the session.
 
 ---
 
 ## Scroll
 
-Mouse wheel events are forwarded to the focused view. The scroll amount in pixels per tick can be tuned:
+Mouse wheel events are forwarded to the focused view. Scroll amount is tunable per view:
 
 ```cpp
-api->SetScrollingPixelSize(view, 40);  // faster scrolling
+api->SetScrollingPixelSize(view, 40);  // default is 28 px per tick
 ```
-
-The default is 28 px per tick. Adjusting this only affects this view; other views are unaffected.

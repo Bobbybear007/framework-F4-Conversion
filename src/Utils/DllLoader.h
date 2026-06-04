@@ -96,9 +96,17 @@ namespace PrismaUI::Utils
 
         void UnloadAllInternal()
         {
+            if (!m_loadedModules.empty()) {
+                logger::info("DllLoader: unloading {} Ultralight DLL(s) in reverse order",
+                             m_loadedModules.size());
+            }
             for (auto it = m_loadedModules.rbegin(); it != m_loadedModules.rend(); ++it) {
                 if (*it) {
+                    char modName[MAX_PATH] = {};
+                    GetModuleFileNameA(*it, modName, MAX_PATH);
                     FreeLibrary(*it);
+                    logger::info("DllLoader: unloaded '{}'",
+                                 modName[0] ? modName : "<unknown>");
                 }
             }
             m_loadedModules.clear();

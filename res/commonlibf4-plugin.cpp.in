@@ -9,7 +9,7 @@ F4SE_PLUGIN_VERSION = []() noexcept {
     v.UsesAddressLibraryNG(false);
     v.UsesSigScanning(false);
     v.IsLayoutDependent(true);
-    v.IsLayoutDependentNG(true);
+    v.IsLayoutDependentNG(false);  // Disable for F4SE NG compatibility
     v.HasNoStructUse(false);
     return v;
 }();

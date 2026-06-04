@@ -35,8 +35,9 @@ local UL_BIN       = UL_ROOT .. "/bin"
 local UL_RESOURCES = UL_ROOT .. "/resources"
 
 if not os.isdir(UL_INCLUDE) then
-    raise("Ultralight SDK not found at:\n  " .. UL_ROOT ..
-          "\n\nRun setup.bat first to extract the SDK:\n  setup.bat")
+    print("ERROR: Ultralight SDK not found at: " .. UL_ROOT)
+    print("Run setup.bat first to extract the SDK")
+    os.exit(1)
 end
 
 target("PrismaUI_F4")
@@ -46,10 +47,9 @@ target("PrismaUI_F4")
     -- F4SE plugin version data auto-generated from these fields.
     -- Log file: %USERPROFILE%\Documents\My Games\Fallout4\F4SE\PrismaUI_F4.log
     add_rules("commonlibf4.plugin", {
-        name            = "PrismaUI_F4",
-        author          = "PrismaUI",
-        version         = "1.0.0",
-        plugin_template = path.join(os.scriptdir(), "res/commonlibf4-plugin.cpp.in")
+        name    = "PrismaUI_F4",
+        author  = "PrismaUI",
+        version = "1.0.0"
     })
 
     -- Sources
@@ -119,18 +119,14 @@ target("PrismaUI_F4")
             os.cp(assets_src, path.join(distdir, "PrismaUI_F4"))
         end
 
-        -- Ultralight 1.4.0 resources + binaries (copy contents, not the directory itself)
+        -- Ultralight 1.4.0 resources + binaries
         local ul_res = path.join(os.scriptdir(), "build", "ultralight-1.4.0", "resources")
         local ul_bin = path.join(os.scriptdir(), "build", "ultralight-1.4.0", "bin")
-        local dest_res = path.join(distdir, "PrismaUI_F4", "resources")
-        local dest_libs = path.join(distdir, "PrismaUI_F4", "libs")
         if os.isdir(ul_res) then
-            os.mkdir(dest_res)
-            os.cp(ul_res .. "/*", dest_res)
+            os.cp(ul_res, path.join(distdir, "PrismaUI_F4", "resources"))
         end
         if os.isdir(ul_bin) then
-            os.mkdir(dest_libs)
-            os.cp(ul_bin .. "/*", dest_libs)
+            os.cp(ul_bin, path.join(distdir, "PrismaUI_F4", "libs"))
         end
 
         print("Distribution ready: dist/PrismaUI_F4_" .. ver)
@@ -142,4 +138,31 @@ target("PrismaUI_F4")
             os.cp(target:targetfile(), path.join(mod_root, "F4SE", "Plugins"))
             print("Deployed DLL to " .. mod_root)
         end
+    end)
+
+-- Example plugin: demonstrates PrismaUI integration pattern
+target("PrismaUI-F4-Example-Plugin")
+    set_kind("shared")
+    set_languages("c++23")
+    set_filename("PrismaUI-F4-Example.dll")
+
+    add_rules("commonlibf4.plugin", {
+        name    = "PrismaUI-F4-Example-Plugin",
+        author  = "PrismaUI",
+        version = "1.0.0"
+    })
+
+    add_includedirs("example-f4se-plugin/src")
+    add_files("example-f4se-plugin/src/**.cpp")
+    set_pcxxheader("example-f4se-plugin/src/PCH.h")
+
+    add_defines("WIN32_LEAN_AND_MEAN", "NOMINMAX")
+
+    if is_plat("windows") then
+        add_cxflags("/permissive-", "/wd4200", "/wd4201", "/wd4324")
+        add_syslinks("Version", "Ole32", "OleAut32", "User32", "bcrypt", "crypt32")
+    end
+
+    after_build(function(target)
+        print("[PrismaUI-F4-Example] built to: " .. target:targetfile())
     end)

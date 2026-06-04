@@ -65,20 +65,32 @@ bool FocusMenu::IsOpen()
 
 void FocusMenu::Open()
 {
+    logger::debug("FocusMenu::Open requested");
     F4SE::GetTaskInterface()->AddUITask([=] {
         auto msgQ = RE::UIMessageQueue::GetSingleton();
         if (msgQ && !IsOpen()) {
-            msgQ->AddMessage(MENU_NAME, RE::UI_MESSAGE_TYPE::kShow);  // F4: 2 args (not 3)
+            logger::debug("FocusMenu::Open: sending kShow");
+            msgQ->AddMessage(MENU_NAME, RE::UI_MESSAGE_TYPE::kShow);
+        } else if (!msgQ) {
+            logger::warn("FocusMenu::Open: UIMessageQueue is null");
+        } else {
+            logger::debug("FocusMenu::Open: already open, skipping");
         }
     });
 }
 
 void FocusMenu::Close()
 {
+    logger::debug("FocusMenu::Close requested");
     F4SE::GetTaskInterface()->AddUITask([=] {
         auto msgQ = RE::UIMessageQueue::GetSingleton();
         if (msgQ && IsOpen()) {
-            msgQ->AddMessage(MENU_NAME, RE::UI_MESSAGE_TYPE::kHide);  // F4: 2 args (not 3)
+            logger::debug("FocusMenu::Close: sending kHide");
+            msgQ->AddMessage(MENU_NAME, RE::UI_MESSAGE_TYPE::kHide);
+        } else if (!msgQ) {
+            logger::warn("FocusMenu::Close: UIMessageQueue is null");
+        } else {
+            logger::debug("FocusMenu::Close: already closed, skipping");
         }
     });
 }

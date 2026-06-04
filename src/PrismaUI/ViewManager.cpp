@@ -617,7 +617,7 @@ namespace PrismaUI::ViewManager {
         std::unique_lock lock(viewsMutex);
         auto it = views.find(viewId);
         if (it != views.end() && it->second) {
-            it->second->translationsPluginName = pluginName;
+            it->second->translationPluginName = pluginName;
             logger::info("RegisterTranslations: View [{}] registered translations for '{}'", viewId, pluginName);
         } else {
             logger::warn("RegisterTranslations: View ID [{}] not found.", viewId);

@@ -1,19 +1,19 @@
 -- example-f4se-plugin/xmake.lua
 --
--- CommonLibF4 is included as a submodule at lib/commonlibf4.
--- Clone with:  git clone --recurse-submodules https://github.com/NomadsReach/framework-F4-Conversion
--- Then build:  xmake -P example-f4se-plugin
---
--- Optional deploy env vars:
---   XSE_FO4_MODS_PATH  — MO2 mods folder root
---   XSE_FO4_GAME_PATH  — Fallout 4 Data folder
+-- Uses NewCommonLib (E:\F4SE OG\Prisma\NewCommonLib), the xmake-based CommonLibF4.
+-- Build NewCommonLib first: cd into it and run `xmake`.
+-- Set XSE_FO4_MODS_PATH or XSE_FO4_GAME_PATH env vars to auto-deploy on `xmake install`.
 
-includes("../lib/commonlibf4")
+-- NewCommonLib pulls spdlog v1.16.0 (wchar+std_format) internally via its own
+-- add_requires. Do NOT add a separate spdlog requirement here — version or config
+-- conflicts with the sub-project's requirement cause LOG.cpp compile errors.
+
+includes("../../../Prisma/NewCommonLib")
 
 target("PrismaUI-F4-Example-Plugin")
     set_kind("shared")
     set_languages("c++23")
-    set_filename("PrismaUI-F4-Example-Plugin.dll")
+    set_filename("PrismaUI-F4-Example.dll")
 
     -- commonlibf4.plugin rule: generates F4SE_PLUGIN_VERSION data and sets install path
     -- from XSE_FO4_MODS_PATH / XSE_FO4_GAME_PATH env vars.
@@ -34,3 +34,6 @@ target("PrismaUI-F4-Example-Plugin")
         add_cxflags("/permissive-", "/wd4200", "/wd4201", "/wd4324")
         add_syslinks("Version", "Ole32", "OleAut32", "User32", "bcrypt", "crypt32")
     end
+
+    -- NOTE: Ultralight libs and PrismaUI_F4 framework are deployed by PrismaUI_F4.dll build, not here.
+    -- This plugin only needs to deploy its own DLL. Use build.bat or deploy.bat to copy to MO2.

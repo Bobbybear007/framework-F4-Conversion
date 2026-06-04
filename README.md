@@ -74,5 +74,5 @@ MO2 merges every mod's `PrismaUI_F4/views/` folder into one virtual directory. V
 - Fallout 4 runtime ≥ 1.10.162
 - F4SE
 - C++23 compiler (MSVC 2022 recommended) for consumer plugins
-- CommonLibF4 You must use this version > https://github.com/frakkin64/commonlibf4 it is the most maintained.
+- CommonLibF4
 - vcpkg (spdlog, bcrypt, version)

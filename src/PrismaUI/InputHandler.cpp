@@ -41,6 +41,10 @@ namespace PrismaUI::InputHandler {
     static constexpr UINT_PTR SUBCLASS_ID = 0x505249534D41;  // "PRISMA" in hex
     static std::mutex g_wndProcMutex;                        // Thread-safe installation
 
+    // Overlay hit-test callbacks: run for every WM_LBUTTONDOWN before Scaleform routing.
+    static std::mutex g_overlayClickMutex;
+    static std::vector<OverlayClickCallback> g_overlayClickHandlers;
+
     static ImeHelper g_imeHelper;
     static std::atomic<bool> g_isFocusedTextInputActive = false;
 
@@ -400,6 +404,17 @@ namespace PrismaUI::InputHandler {
         if (uMsg == WM_MOUSEMOVE) {
             g_lastCursorX.store(static_cast<int>(LOWORD(lParam)));
             g_lastCursorY.store(static_cast<int>(HIWORD(lParam)));
+        }
+
+        // Overlay hit-test: runs before PrismaUI capture and before Scaleform/game routing.
+        // lParam for WM_LBUTTONDOWN is already in client coordinates.
+        if (uMsg == WM_LBUTTONDOWN) {
+            const int clickX = static_cast<int>(LOWORD(lParam));
+            const int clickY = static_cast<int>(HIWORD(lParam));
+            std::lock_guard<std::mutex> lock(g_overlayClickMutex);
+            for (auto& cb : g_overlayClickHandlers) {
+                if (cb(clickX, clickY)) return 0; // consumed — Scaleform won't see it
+            }
         }
 
         if (g_isAnyInputCaptureActive.load()) {
@@ -1033,6 +1048,11 @@ namespace PrismaUI::InputHandler {
                 }
             }
         });
+    }
+
+    void RegisterOverlayClickHandler(OverlayClickCallback cb) {
+        std::lock_guard<std::mutex> lock(g_overlayClickMutex);
+        g_overlayClickHandlers.push_back(std::move(cb));
     }
 
     void Shutdown() {

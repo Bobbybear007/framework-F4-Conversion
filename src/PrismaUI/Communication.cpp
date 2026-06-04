@@ -1,6 +1,7 @@
 ﻿#include "Communication.h"
 
 #include "Core.h"
+#include "Translations.h"
 #include "ViewManager.h"
 
 namespace PrismaUI::Communication {
@@ -76,17 +77,37 @@ namespace PrismaUI::Communication {
 
     void BindJSCallbacks(const Core::PrismaViewId& viewId) {
         std::shared_ptr<PrismaView> viewData = nullptr;
+        std::unordered_map<std::string, std::string> translationsCopy;
+        bool hasTranslations = false;
         {
             std::shared_lock lock(viewsMutex);
             auto it = views.find(viewId);
             if (it != views.end()) {
                 viewData = it->second;
+                if (viewData && !viewData->translationPluginName.empty() && !viewData->translations.empty()) {
+                    translationsCopy = viewData->translations;
+                    hasTranslations = true;
+                }
             }
         }
 
         if (!viewData || !viewData->ultralightView || !viewData->isLoadingFinished) {
             logger::warn("BindJSCallbacks: View [{}] not ready or not loaded.", viewId);
             return;
+        }
+
+        // Inject window.L10N / window.t() if translations are registered for this view
+        if (hasTranslations) {
+            std::string l10nScript = Translations::BuildL10NScript(translationsCopy);
+            if (!l10nScript.empty()) {
+                ultralight::String ul_script(l10nScript.c_str());
+                try {
+                    viewData->ultralightView->EvaluateScript(ul_script, nullptr);
+                    logger::debug("BindJSCallbacks: Injected L10N translations for view [{}].", viewId);
+                } catch (...) {
+                    logger::error("BindJSCallbacks: Failed to inject L10N translations for view [{}].", viewId);
+                }
+            }
         }
 
         std::vector<JSCallbackData> viewCallbacks;

@@ -27,6 +27,7 @@
 #include <shared_mutex>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -61,7 +62,8 @@ namespace PrismaUI::Core {
         std::atomic<bool> isLoadingFinished = false;
         std::function<void(const PrismaViewId&)> domReadyCallback;
         std::function<void(PrismaViewId, PRISMA_UI_API::ConsoleMessageLevel, const std::string&)> consoleMessageCallback;
-        std::string translationsPluginName;
+        std::string translationPluginName;  // Set by RegisterTranslations; empty means no translations loaded
+        std::unordered_map<std::string, std::string> translations;
         int scrollingPixelSize = 28;
         std::atomic<bool> isPaused = false;
         int order = 0;

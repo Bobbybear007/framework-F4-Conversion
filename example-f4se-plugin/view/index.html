@@ -430,26 +430,16 @@
     }
 
     window.init = function() {
-        var badge = document.getElementById('paBadge');
-        var text  = document.getElementById('paText');
-        var hdr   = document.getElementById('hdr');
         if (window.prisma) {
-            badge.className = 'badge badge-green';
-            badge.textContent = 'AVAILABLE';
-            text.textContent  = 'window.prisma injected — ready to use';
-            hdr.textContent   = 'prisma ready';
-        } else if (typeof window.__prisma_request === 'function') {
-            // InjectBridge ran but the bridge script itself threw — check log for "bridge inject failed"
-            badge.className = 'badge badge-amber';
-            badge.textContent = 'INJECT ERROR';
-            text.textContent  = 'window.prisma injection failed — check PrismaUI_F4.log for "bridge inject failed"';
-            hdr.textContent   = 'inject error';
+            document.getElementById('paBadge').className='badge badge-green';
+            document.getElementById('paBadge').textContent='AVAILABLE';
+            document.getElementById('paText').textContent='window.prisma injected — ready to use';
+            document.getElementById('hdr').textContent='prisma ready';
         } else {
-            // InjectBridge never ran — PrismaUI_F4 is pre-v1.6 or not loaded
-            badge.className = 'badge badge-red';
-            badge.textContent = 'NOT FOUND';
-            text.textContent  = 'window.prisma missing — requires PrismaUI_F4 v1.6 or later';
-            hdr.textContent   = 'upgrade needed';
+            document.getElementById('paBadge').className='badge badge-red';
+            document.getElementById('paBadge').textContent='NOT FOUND';
+            document.getElementById('paText').textContent='window.prisma missing — is PrismaUI_F4 running?';
+            document.getElementById('hdr').textContent='no prisma';
         }
         lg('cj','C++→JS','init() — DOM ready');
     };
