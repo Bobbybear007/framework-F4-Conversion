@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 echo ========================================
 echo   PrismaUI Example Plugin
-echo   Complete Build & Deploy
+echo   Complete Build and Deploy
 echo ========================================
 echo.
 

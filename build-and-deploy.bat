@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 echo ========================================
 echo   PrismaUI_F4 Framework
-echo   Complete Build, Setup & Deploy
+echo   Complete Build, Setup and Deploy
 echo ========================================
 echo.
 
