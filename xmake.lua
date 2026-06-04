@@ -24,8 +24,12 @@ add_requires("directxtk")
 -- version+configs here makes it available for direct inclusion in PCH.h.
 add_requires("spdlog v1.16.0", { configs = { header_only = false, wchar = true, std_format = true } })
 
-includes("lib/commonlibf4")
-
+local game_ver = os.getenv("PRISMA_TARGET") or "ng"
+if game_ver == "og" then
+    includes("E:/F4SE OG/CommonLibF4")
+else
+    includes("lib/commonlibf4")
+end
 -- Ultralight 1.4.0 SDK
 -- Run setup.bat once before building to extract external/ultralight-sdk-1.4.0-win-x64.7z
 local UL_ROOT      = path.join(os.scriptdir(), "build", "ultralight-1.4.0")
@@ -106,7 +110,8 @@ target("PrismaUI_F4")
     after_build(function(target)
         local proj    = os.scriptdir()
         local ver     = "1.0.0"
-        local distdir = path.join(proj, "dist", "PrismaUI_F4_" .. ver)
+        local game_ver = os.getenv("PRISMA_TARGET") or "ng"
+        local distdir = path.join(proj, "dist", "PrismaUI_F4_" .. ver .. "_" .. string.upper(game_ver))
 
         -- DLL
         local f4se_plugins = path.join(distdir, "F4SE", "plugins")

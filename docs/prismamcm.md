@@ -1,3 +1,6 @@
+---
+title: 'PrismaMCM'
+---
 # PrismaMCM — Mod Configuration Menu
 
 PrismaMCM is a companion plugin that gives any mod a settings screen without requiring C++ code. You drop a `config.json` file into your mod's data folder and PrismaMCM renders the controls, reads current values, and writes changes back — directly to Papyrus auto-properties, TESGlobal forms, or INI files.

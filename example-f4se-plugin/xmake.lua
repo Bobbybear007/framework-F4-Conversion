@@ -8,7 +8,7 @@
 -- add_requires. Do NOT add a separate spdlog requirement here — version or config
 -- conflicts with the sub-project's requirement cause LOG.cpp compile errors.
 
-includes("../../../Prisma/NewCommonLib")
+-- CommonLibF4 is included by the root xmake.lua based on PRISMA_TARGET
 
 target("PrismaUI-F4-Example-Plugin")
     set_kind("shared")

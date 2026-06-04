@@ -547,3 +547,50 @@ JSListenerCallback (Ultralight thread — dispatch RE:: work):
       g_api->InteropCall(g_view, "result", data.c_str());
   });
 ```
+
+---
+
+## Papyrus Bridge API (window.prisma)
+
+### Overview
+
+`window.prisma` is automatically injected by PrismaUI_F4 into every HTML view. It provides read-only access to Papyrus globals and script properties without requiring C++ code in your plugin.
+
+**Available methods:**
+- `await prisma.getGlobal(esp, formId)` — Read a `TESGlobal` form value
+- `await prisma.getProperty(esp, formId, scriptName, propertyName)` — Read an `Auto` property from a Papyrus script
+
+### Known Limitations
+
+**Property writes are not supported.** Papyrus scripts finalize their property values at initialization. After that, F4SE cannot modify them from outside the Papyrus VM. This is a fundamental engine limitation, not a PrismaUI limitation.
+
+**Workaround:** Use `TESGlobal` variables instead of properties. Globals can be read and written at runtime. Alternatively, if you need to modify script state, do it from C++ via `F4SE::GetTaskInterface()->AddTask()` and the Papyrus VM scripting interface.
+
+### Return Values
+
+Both read methods return **Promises** and handle errors gracefully:
+- Returns a `number` on success (including 0.0, which is a valid result)
+- Returns `null` if the form/plugin is not loaded, form doesn't exist, or script/property name mismatch
+- Never throws — always guard with `if (val === null)`
+
+### Example
+
+```javascript
+// Read a global
+const val = await prisma.getGlobal('MyMod.esp', '800');
+if (val !== null) {
+    console.log('Global value:', val);
+} else {
+    console.log('Form not found or plugin not loaded');
+}
+
+// Read a quest property (most reliable host for properties)
+const propVal = await prisma.getProperty('MyMod.esp', '801', 'MyQuestScript', 'CurrentPhase');
+if (propVal !== null && propVal !== undefined) {
+    console.log('Quest phase:', propVal);
+}
+```
+
+### Timing
+
+`window.prisma` is available immediately — no wait needed. However, `getProperty` calls may return `null` if the Papyrus VM is not yet ready (e.g., if called before `kPostLoadGame`). For best results, call property reads after the game has finished loading.

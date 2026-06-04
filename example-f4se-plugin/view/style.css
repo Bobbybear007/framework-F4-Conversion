@@ -71,6 +71,7 @@ input[type="text"] {
     border-radius:3px; color:rgba(255,255,255,0.8);
     font-family:'Consolas',monospace; font-size:12px;
     padding:6px 9px; outline:none; width:100%;
+    user-select: text;
 }
 input::placeholder { color:rgba(255,255,255,0.18); }
 input:focus { border-color:rgba(59,130,246,0.5); background:rgba(59,130,246,0.04); }
@@ -99,10 +100,11 @@ button.r:active { background:rgba(239,68,68,0.4);  }
 .rv.error   { color:#ef4444; font-style:normal; }
 .rv.waiting { color:#f59e0b; font-style:italic; }
 hr.d { border:none; border-top:1px solid rgba(255,255,255,0.06); }
-.log {
+.log, textarea {
     font-size:11px; font-family:'Consolas',monospace;
     display:flex; flex-direction:column; gap:3px;
     min-height:60px; max-height:200px; overflow-y:auto;
+    user-select: text;
 }
 .log-entry { display:flex; gap:8px; }
 .lt  { color:rgba(255,255,255,0.18); flex-shrink:0; }

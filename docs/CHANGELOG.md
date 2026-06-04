@@ -1,74 +1,9 @@
-## v1.7
-
-<details>
-<summary><b>Click to expand Version 1.7 Changelog</b></summary>
-
-### Framework Improvements
-- Added new NotificationSystem for displaying in-game notifications.
-- Enhanced InputHandler functionality and reliability.
-- Improved ViewManager architecture and view lifecycle handling.
-- Updated communication layer between C++, JavaScript, and game systems.
-- Finalized transition to xmake as the sole build system.
-- Removed legacy CMake support.
-
-### Build & Deployment
-- Consolidated build.bat, deploy.bat, setup.bat, and verify-deploy.bat into a single build-and-deploy.bat script.
-- Added automatic GitHub version checking for SDK dependencies.
-- Added automatic Ultralight SDK extraction during setup/build.
-- Improved deployment error handling and validation.
-- Finalized xmake project configuration.
-
-### Example Plugin Improvements
-- Fixed Event Log copy functionality by sending the full log through the C++ bridge instead of relying on the browser Clipboard API.
-- Fixed Copy button state reset issues.
-- Added C++ → JavaScript callback support for sendDataToF4SE.
-- Event Log now displays framework callback messages.
-- Enabled scrolling for Event Log container via overflow-y: auto.
-- Improved optional API guards and error reporting.
-- Added additional logging throughout the example plugin.
-
-### Papyrus Bridge & Property System
-- Updated FormID resolution to use TESDataHandler for plugin-aware lookups.
-- Property reads now correctly account for plugin load order offsets.
-- Property writes now correctly account for plugin load order offsets.
-- Removed unsupported property write functionality from the example plugin.
-- Clarified Papyrus Bridge limitations and supported workflows.
-
-### Documentation
-- Added a comprehensive Tutorial tab featuring 9 guided sections covering framework basics, view creation, communication APIs, event handling, Papyrus integration, notifications, common patterns, best practices, and troubleshooting.
-- Added:
-  - CHANGELOG.md
-  - limitations.md
-  - papyrus-bridge.md
-  - translations.md
-  - modern-frameworks.md
-- Expanded documentation for:
-  - View lifecycle behavior
-  - HTML view support
-  - JavaScript support matrix
-  - API reference examples
-
-### New Assets
-- Added notification-banner.html component.
-- Added new example and reference documentation assets.
-
-### Refactoring
-- Cleaned up API comments throughout the framework.
-- Improved code organization and maintainability.
-- General documentation and comment consistency improvements.
-
-### Breaking Changes
-- Removed CMake support.
-- xmake is now the only supported build system.
-
-</details>
-
 ---
+title: 'Changelog'
+---
+# Changelog
 
 ## Version 1.6
-
-<details>
-<summary><b>Click to expand Version 1.6 Changelog</b></summary>
 
 ### Papyrus Bridge — `window.prisma`
 
@@ -144,14 +79,9 @@ Both the example plugin and the core `PrismaUI_F4.dll` have migrated from `cmake
 - `Core.cpp`: added `reinterpret_cast` bridges to map `REX::W32` COM types to SDK COM types for compatibility with D3D11 and DirectXTK.
 - Runtime: switched the runtime library to `/MD` to align with precompiled xmake DirectXTK and `commonlibf4` packages.
 
-</details>
-
 ---
 
 ## Version 1.5
-
-<details>
-<summary><b>Click to expand Version 1.5 Changelog</b></summary>
 
 ### Security
 
@@ -164,14 +94,9 @@ Both the example plugin and the core `PrismaUI_F4.dll` have migrated from `cmake
 > [!NOTE]
 > There are no changes to the public API. Plugins built against V1–V4 will receive this sandbox automatically with no code changes required.
 
-</details>
-
 ---
 
 ## Version 1.4
-
-<details>
-<summary><b>Click to expand Version 1.4 Changelog</b></summary>
 
 ### Documentation Updates
 
@@ -182,14 +107,9 @@ Both the example plugin and the core `PrismaUI_F4.dll` have migrated from `cmake
 - Added an "Updating Your Plugin" migration section to `api-reference.md`.
 - Updated the DOM Ready callback section to include implementation guidance comparing `BindUIEvent` vs `RegisterJSListener`.
 
-</details>
-
 ---
 
 ## Version 1.3
-
-<details>
-<summary><b>Click to expand Version 1.3 Changelog</b></summary>
 
 ### Runtime Compatibility
 
@@ -211,37 +131,29 @@ Both the example plugin and the core `PrismaUI_F4.dll` have migrated from `cmake
   - `Focus` / `Unfocus`
   - `IsValid` / `SetOrder`
 
+
 - **JavaScript Interop:**
   - Added `InteropCall` for high-frequency C++ to JavaScript communication.
   - Added `Invoke` for one-shot JavaScript execution with callback support.
   - Added `RegisterJSListener` to expose named window-level JavaScript functions directly to C++.
 
+
 - **Console Logging:** Added `RegisterConsoleCallback` (V2) to pipe JavaScript console messages (`log`, `warn`, `error`, `debug`, `info`) directly into the C++ log.
 - **Localization:** Added `RegisterTranslations` (V3), which automatically loads translation files from `Data\\Interface\\Translations\\<plugin>_<lang>.txt` and injects `window.L10N` and `window.t()` into every view on page load.
 - **Debugging Tools:** Added inspector view support via `CreateInspectorView`, `SetInspectorVisibility`, and `SetInspectorBounds`.
 
-</details>
-
 ---
 
 ## Version 1.2
-
-<details>
-<summary><b>Click to expand Version 1.2 Changelog</b></summary>
 
 ### PrismaDesigner Refactor
 
 - **Canvas Refactor:** Overhauled canvas item handling; inserted elements are now managed through an internal reference-based system.
 - **Stability:** General stability and architectural cleanup across the designer pipeline to establish foundational work for future editor and layout features.
 
-</details>
-
 ---
 
 ## Version 1.1
-
-<details>
-<summary><b>Click to expand Version 1.1 Changelog</b></summary>
 
 ### Bug Fixes
 
@@ -259,5 +171,3 @@ Both the example plugin and the core `PrismaUI_F4.dll` have migrated from `cmake
 
 > [!TIP]
 > If you experienced crashes on Windows 10, update `PrismaUI_F4` and replace the binaries inside `PrismaUI_F4\libs\` with the DLLs included in this release.
-
-</details>

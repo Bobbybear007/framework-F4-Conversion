@@ -294,3 +294,20 @@ The inspector is the full WebKit DevTools. You can inspect the DOM, run JS in th
 </body>
 </html>
 ```
+
+---
+
+## Build and Deployment Automation
+
+The PrismaUI_F4 framework includes automated `build-and-deploy.bat` scripts that:
+
+1. **Check GitHub for framework updates** — Queries the latest release from https://github.com/NomadsReach/framework-F4-Conversion and alerts if a newer version is available
+2. **Verify source freshness** — Compares source file timestamps against the built DLL and prompts rebuild if source is newer
+3. **Auto-extract SDK** — Automatically copies the Ultralight SDK from the local cache if it's missing from the build output
+4. **Deploy all artifacts** — Copies DLL, libraries, resources, and assets to the target MO2 mod folder
+
+**Framework build:** `E:\F4SE OG\Prisma\PrismaUI_F4 New Gen\build-and-deploy.bat`
+
+**Example plugin build:** `E:\F4SE OG\Prisma\PrismaUI_F4 New Gen\example-f4se-plugin\build-and-deploy.bat`
+
+Both scripts run from their respective directories and prompt you for the deployment path. No manual SDK extraction or file copying is required.

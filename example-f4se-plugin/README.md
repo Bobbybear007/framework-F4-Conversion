@@ -1,65 +1,27 @@
-# PrismaUI_F4 Example Plugin
+# PrismaUI Example Plugin
 
-A minimal example demonstrating how to build a PrismaUI_F4 plugin for Fallout 4.
+This is a complete, ready-to-compile example of a Fallout 4 F4SE plugin that uses the PrismaUI framework to render an HTML/JS/CSS interface in-game.
 
-## Quick Start
+## Dual-Targeting: Old-Gen vs Next-Gen
 
-### Prerequisites
-- Fallout 4 with F4SE installed
-- Visual Studio 2022 with C++ tools
-- xmake 3.0+
-- MO2 (optional, for mod testing)
+Fallout 4 was heavily updated in the "Next-Gen" patch (1.10.984). Because your C++ plugin communicates directly with F4SE and the game engine, **you must compile two different versions of your DLL** if you want to support all users. 
+- A plugin compiled for Next-Gen will crash if loaded into Old-Gen (1.10.163).
+- A plugin compiled for Old-Gen will be ignored or crash if loaded into Next-Gen.
 
-### Building
+However, your UI files (`.html`, `.css`, `.js`) are universal and only need to be written once!
 
-From the parent directory (`E:\F4SE OG\Prisma\PrismaUI_F4 New Gen\`):
+### How to Compile
 
-```powershell
-# Configure (one-time)
-xmake f -m release -y
+We have provided a fully automated build script that handles switching the game version offsets for you using `xmake`.
 
-# Build the plugin
-xmake build PrismaUI-F4-Example-Plugin
-```
+1. Double-click the `build-and-deploy.bat` file in this directory.
+2. The script will ask you: `Build for Old-Gen (OG) or Next-Gen (NG)? [OG/NG]:`
+3. Type `OG` and hit Enter. The script will compile your Old-Gen DLL and deploy it.
+4. Run the script a second time, type `NG`, and hit Enter. The script will compile your Next-Gen DLL.
 
-The plugin DLL will be built to:
-```
-build\windows\x64\release\PrismaUI-F4-Example.dll
-```
+### Publishing to NexusMods
 
-### Deploying to MO2
-
-From the `example-f4se-plugin\` directory:
-
-```powershell
-# Run the build and deploy script
-.\build.bat
-
-# Or, if already built:
-.\deploy.bat
-```
-
-Both scripts will prompt for your MO2 mods folder path and copy the plugin DLL to:
-```
-<MO2 Mods Folder>\ExamplePlugin\F4SE\plugins\PrismaUI-F4-Example.dll
-```
-
-### Verifying Deployment
-
-```powershell
-.\verify-deploy.bat
-```
-
-This checks that the DLL was deployed correctly and isn't empty.
-
-## How It Works
-
-The example plugin demonstrates:
-
-1. **F4SE Plugin Initialization** — Registering message handlers for game events
-2. **PrismaUI API Access** — Requesting the IVPrismaUI2 interface at `kGameDataReady`
-3. **View Lifecycle** — Creating and managing UI views safely
-4. **Event Handling** — Responding to game and UI events
+When uploading your mod, you should provide both DLLs to your users. The easiest way to do this is to use a [FOMOD Installer](https://wiki.nexusmods.com/index.php/How_to_create_Mod_Installers). This allows the user's Mod Manager (like MO2 or Vortex) to automatically detect their game version and install the correct DLL, while installing your universal UI files regardless of their version.
 
 ## File Structure
 
@@ -69,48 +31,15 @@ example-f4se-plugin/
 │   ├── main.cpp              — Plugin entry point and initialization
 │   ├── keyhandler/           — Input event handling
 │   └── PCH.h                 — Precompiled header
-├── build.bat                 — Build + deploy script
-├── deploy.bat                — Deploy-only script
-├── verify-deploy.bat         — Verification script
-└── xmake.lua                 — Build configuration (included in parent)
+├── view/                     — Your HTML/JS/CSS frontend
+├── build-and-deploy.bat      — Automated dual-targeting build script
+└── xmake.lua                 — Build configuration
 ```
-
-## Key Files
-
-- **xmake.lua** — Build target defined in parent xmake.lua (not standalone)
-- **PCH.h** — Precompiled header with CommonLibF4 and PrismaUI includes
-- **main.cpp** — F4SE plugin initialization and message handler setup
-
-## Troubleshooting
-
-### "Build failed" — xmake compilation error
-- Ensure NewCommonLib is built: `cd E:\F4SE OG\Prisma\NewCommonLib && xmake`
-- Check vcvars64.bat is in your PATH: `call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"`
-
-### "DLL not found at deploy time"
-- Run `build.bat` from the plugin directory (not `deploy.bat` alone)
-- Verify build succeeded: check for `build\windows\x64\release\PrismaUI-F4-Example.dll` in the parent
-
-### "Empty folders in MO2"
-- Check log: `%USERPROFILE%\Documents\My Games\Fallout4\F4SE\PrismaUI-F4-Example-Plugin.log`
-- Verify MO2 path is correct when `build.bat` prompts
-- Run `verify-deploy.bat` to check file size
 
 ## Integration with PrismaUI_F4
 
-This plugin requires PrismaUI_F4 framework to be installed:
-- Framework DLL: `PrismaUI_F4.dll` → `F4SE\plugins\`
-- Framework files: Ultralight libs + resources → `Data\PrismaUI_F4\`
+This plugin requires the PrismaUI_F4 framework to be installed:
+- Framework DLL: `PrismaUI_F4.dll`
+- Framework dependencies: Ultralight libs + resources
 
-Deploy PrismaUI_F4 first before loading this plugin.
-
-## Next Steps
-
-After successful build:
-
-1. **Add Views** — Create HTML/CSS/JS files in `view/` for UI
-2. **Register Listeners** — Use `RegisterJSListener()` in your message handler
-3. **Call JS** — Use `InteropCall()` for frequent calls, `Invoke()` for one-shot reads
-4. **Test In-Game** — Load the mod in your profile and check the F4SE log
-
-See `E:\F4SE OG\Prisma\PrismaUI_F4\docs\` for complete API documentation.
+Make sure you have deployed the framework before loading your plugin in-game.

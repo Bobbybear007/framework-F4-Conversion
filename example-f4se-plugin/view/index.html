@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PrismaUI F4 — Full API Guide</title>
+    <title>PrismaUI F4 &mdash; Full API Guide</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         html, body {
@@ -13,6 +13,7 @@
         }
         .panel {
             width: 600px;
+            max-height: 90vh;
             background: rgba(14,14,18,0.97);
             border: 1px solid rgba(255,255,255,0.08);
             border-radius: 6px; overflow: hidden;
@@ -40,7 +41,7 @@
         }
         .tab-btn:hover  { color:rgba(255,255,255,0.55); }
         .tab-btn.active { color:#3b82f6; border-bottom-color:#3b82f6; }
-        .tab-panel { padding:14px 16px; display:none; flex-direction:column; gap:12px; }
+        .tab-panel { padding:14px 16px; display:none; flex-direction:column; gap:12px; overflow-y:auto; flex:1; min-height:0; }
         .tab-panel.active { display:flex; }
         .card {
             background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07);
@@ -77,9 +78,18 @@
             border-radius:3px; color:rgba(255,255,255,0.8);
             font-family:'Consolas',monospace; font-size:12px;
             padding:6px 9px; outline:none; width:100%;
+            user-select: text;
         }
         input::placeholder { color:rgba(255,255,255,0.18); }
         input:focus { border-color:rgba(59,130,246,0.5); background:rgba(59,130,246,0.04); }
+        textarea {
+            background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+            border-radius:3px; color:rgba(255,255,255,0.8);
+            font-family:'Consolas',monospace; font-size:11px;
+            padding:12px; outline:none;
+            user-select: text;
+        }
+        textarea:focus { border-color:rgba(59,130,246,0.5); background:rgba(59,130,246,0.04); }
         .btn-row { display:flex; gap:8px; align-items:center; }
         button {
             background:rgba(59,130,246,0.14); border:1px solid rgba(59,130,246,0.32);
@@ -105,18 +115,13 @@
         .rv.error   { color:#ef4444; font-style:normal; }
         .rv.waiting { color:#f59e0b; font-style:italic; }
         hr.d { border:none; border-top:1px solid rgba(255,255,255,0.06); }
-        .log {
+        #log {
             font-size:11px; font-family:'Consolas',monospace;
-            display:flex; flex-direction:column; gap:3px;
-            min-height:60px; max-height:200px; overflow:hidden;
+            background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2);
+            border-radius:3px; padding:12px; min-height:120px; max-height:300px;
+            color:rgba(255,255,255,0.8); line-height:1.4;
+            resize:vertical; width:100%;
         }
-        .log-entry { display:flex; gap:8px; }
-        .lt  { color:rgba(255,255,255,0.18); flex-shrink:0; }
-        .ld  { flex-shrink:0; }
-        .ld.cj { color:#3b82f6; } .ld.jc { color:#22c55e; }
-        .ld.po { color:#a78bfa; } .ld.pi { color:#f59e0b; }
-        .lm  { color:rgba(255,255,255,0.55); word-break:break-all; }
-        .le  { color:rgba(255,255,255,0.16); font-style:italic; }
         .panel-footer {
             padding:9px 16px; border-top:1px solid rgba(255,255,255,0.06);
             display:flex; justify-content:space-between; align-items:center; flex-shrink:0;
@@ -135,7 +140,7 @@
 
     <div class="panel-header">
         <div class="dot"></div>
-        <div class="panel-title">PrismaUI F4 — Full API Guide</div>
+        <div class="panel-title">PrismaUI F4 &mdash; Full API Guide</div>
         <div class="panel-sub" id="hdr">checking…</div>
     </div>
 
@@ -143,9 +148,9 @@
         <button class="tab-btn active" id="tbP" onclick="tab('p')">Papyrus Bridge</button>
         <button class="tab-btn"        id="tbB" onclick="tab('b')">C++ Bridge</button>
         <button class="tab-btn"        id="tbL" onclick="tab('l')">Event Log</button>
+        <button class="tab-btn"        id="tbT" onclick="tab('t')">Tutorial</button>
     </div>
 
-    <!-- TAB: Papyrus Bridge -->
     <div class="tab-panel active" id="tp">
 
         <div class="card">
@@ -203,15 +208,14 @@
         </div>
 
         <div class="card">
-            <div class="card-label">Papyrus Auto Property — read / write a script property on any form</div>
+            <div class="card-label">Papyrus Auto Property — read a script property on any form</div>
             <div class="card-desc">
-                <code>const val = await prisma.getProperty(esp, formId, scriptName, propName)</code><br>
-                <code>prisma.setProperty(esp, formId, scriptName, propName, value)</code><br><br>
+                <code>const val = await prisma.getProperty(esp, formId, scriptName, propName)</code><br><br>
                 The form must have <code>scriptName</code> attached with the property declared <code>Auto</code>.
                 Quest forms are the most reliable host — they persist across cell changes.
                 Supports <code>float</code>, <code>int</code>, <code>bool</code> only (no strings, no arrays).
-                Writes coerce your value to the property's declared type automatically.
                 Always call after <code>kPostLoadGame</code> — the Papyrus VM is not ready before that.
+                <strong>Note:</strong> Property writes are not supported — Papyrus properties cannot be modified after initialization via F4SE.
             </div>
             <div class="form-grid form-grid-2">
                 <div class="field">
@@ -238,17 +242,6 @@
                     <div class="rv" id="gpRes">— awaiting —</div>
                 </div>
             </div>
-            <hr class="d">
-            <div class="form-grid">
-                <div class="field">
-                    <div class="field-label">New value (float / int / bool)</div>
-                    <input id="gpVal" type="text" placeholder="2.5" />
-                </div>
-            </div>
-            <div class="btn-row">
-                <button class="g" onclick="doSetProp()">Write Property</button>
-                <span style="font-size:11px;color:rgba(255,255,255,0.22)">Uses the four fields above. Read back to confirm.</span>
-            </div>
         </div>
 
         <div class="card">
@@ -265,12 +258,10 @@
         </div>
 
     </div>
-
-    <!-- TAB: C++ Bridge -->
     <div class="tab-panel" id="tb">
 
         <div class="card">
-            <div class="card-label">C++ → JS — Invoke() and InteropCall()</div>
+            <div class="card-label">C++ &rarr; JS &mdash; Invoke() and InteropCall()</div>
             <div class="card-desc">
                 <code>api-&gt;Invoke(view, "fnName(args)")</code> — evaluates a JS expression.
                 Higher overhead; use for one-shot calls like init and infrequent UI updates.<br>
@@ -287,7 +278,7 @@
         </div>
 
         <div class="card">
-            <div class="card-label">JS → C++ — BindUIEvent()</div>
+            <div class="card-label">JS &rarr; C++ &mdash; BindUIEvent()</div>
             <div class="card-desc">
                 <code>api-&gt;BindUIEvent(view, "eventName", callback)</code> exposes a named function
                 on <code>window</code> that JS calls like any other function.<br>
@@ -328,21 +319,20 @@
         </div>
 
     </div>
-
-    <!-- TAB: Event Log -->
     <div class="tab-panel" id="tl">
 
         <div class="card">
             <div class="card-label">Bridge Event Log</div>
             <div class="card-desc" style="margin-bottom:2px">
-                <span style="color:#a78bfa">prisma→</span> JS called prisma &nbsp;·&nbsp;
-                <span style="color:#f59e0b">←prisma</span> result back &nbsp;·&nbsp;
-                <span style="color:#3b82f6">C++→JS</span> Invoke/InteropCall &nbsp;·&nbsp;
-                <span style="color:#22c55e">JS→C++</span> BindUIEvent
+                <span style="color:#a78bfa">prisma&rarr;</span> JS called prisma &nbsp;&middot;&nbsp;
+                <span style="color:#f59e0b">&larr;prisma</span> result back &nbsp;&middot;&nbsp;
+                <span style="color:#3b82f6">C++&rarr;JS</span> Invoke/InteropCall &nbsp;&middot;&nbsp;
+                <span style="color:#22c55e">JS&rarr;C++</span> BindUIEvent
             </div>
-            <div class="log" id="log">
-                <div class="le">No events yet. Use the Papyrus Bridge or C++ Bridge tabs.</div>
+            <div class="btn-row">
+                <button class="g" onclick="copyEventLog()">Copy Log</button>
             </div>
+            <textarea id="log" readonly>No events yet. Use the Papyrus Bridge or C++ Bridge tabs.</textarea>
         </div>
 
         <div class="card">
@@ -359,6 +349,117 @@
         </div>
 
     </div>
+    <div class="tab-panel" id="tt">
+
+        <div class="card">
+            <div class="card-label">Quick Start — 30 Seconds</div>
+            <div class="card-desc">
+                1. Press <strong>F3</strong> in-game to open this panel.<br>
+                2. Go to <strong>Papyrus Bridge</strong> tab.<br>
+                3. Try <strong>Read Global</strong> with any mod's plugin name and form ID (e.g., <code>MyMod.esp</code> + <code>800</code>).<br>
+                4. Check the result below the button. If it says <code>null</code>, the mod or form doesn't exist. If it shows a number, you've read a Papyrus global successfully!
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Papyrus Bridge — What It Does</div>
+            <div class="card-desc">
+                <strong>Read Globals:</strong> Get the current value of a <code>TESGlobal</code> form from any loaded mod. Type the plugin name and the form's local hex ID (without the file-index byte).<br><br>
+                <strong>Write Globals:</strong> Set a new value for a global. Enter a number and click <strong>Write Global</strong>. The change happens instantly in memory.<br><br>
+                <strong>Read Properties:</strong> Get the value of an <code>Auto</code> property from a Papyrus script attached to any form. Requires all 4 fields: plugin, form ID, script name, and property name.<br><br>
+                <strong>Why no property writes?</strong> Papyrus scripts finalize their property values when the script initializes. After that, F4SE cannot modify them from outside the game thread. Workaround: use a global variable instead.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Example: Reading a Quest Global</div>
+            <div class="card-desc">
+                In the Papyrus Bridge tab, enter:<br>
+                <code>Plugin:</code> <code>Fallout4.esm</code><br>
+                <code>Form ID:</code> <code>35</code><br>
+                <code>Read Global</code> → should return a float like <code>1</code> or <code>0</code>.<br><br>
+                The form <code>0x00000035</code> is a built-in Fallout 4 global. This verifies the bridge is working.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Example: Reading a Quest Property</div>
+            <div class="card-desc">
+                In the Papyrus Bridge tab, enter:<br>
+                <code>Plugin:</code> <code>PrismaQuestTest.esp</code> (if you have it)<br>
+                <code>Form ID:</code> <code>F99</code><br>
+                <code>Script:</code> <code>PrismaTestQuest</code><br>
+                <code>Property:</code> <code>TestFloat</code><br>
+                <code>Read Property</code> &rarr; returns the current value.<br><br>
+                If you don't have this mod, use your own quest mod instead.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">C++ Bridge Tab — What It Does</div>
+            <div class="card-desc">
+                Shows how the plugin can call JavaScript from C++, and JavaScript can call back to C++.<br><br>
+                <strong>Focus Badge:</strong> Updated by the C++ plugin code via <code>Invoke()</code>. When you press <strong>F3</strong>, the badge changes to <strong>FOCUSED</strong> (green).<br><br>
+                <strong>Send Message:</strong> Type a message and press Enter or click <strong>Send</strong>. The message is serialized to JSON and sent to the C++ plugin, which logs it to the F4SE log file.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Event Log — How to Read It</div>
+            <div class="card-desc">
+                Every call to <code>window.prisma</code>, every result, and every message to the plugin is logged with a timestamp and color-coded source:<br><br>
+                <span style="color:#3b82f6">C++&rarr;JS</span> = C++ called into JavaScript<br>
+                <span style="color:#22c55e">JS&rarr;C++</span> = JavaScript sent data to C++<br>
+                <span style="color:#a78bfa">prisma&rarr;</span> = Your code called <code>window.prisma</code><br>
+                <span style="color:#f59e0b">&larr;prisma</span> = <code>window.prisma</code> returned a result<br><br>
+                Use this to verify that calls are firing, and to debug timing issues or missing data.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Debugging — F4SE Log Location</div>
+            <div class="card-desc">
+                C++ plugin output appears in:<br>
+                <code style="font-size:10px">%USERPROFILE%\Documents\My Games\Fallout4\F4SE\</code><br>
+                <code style="font-size:10px">PrismaUI-F4-Example-Plugin.log</code><br><br>
+                Open this file in a text editor while playing. Every action in this panel is logged with a timestamp. If something doesn't work, check this log for error messages.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">Common Patterns</div>
+            <div class="card-desc">
+                <strong>1. Check if a mod is loaded:</strong> Call <code>getGlobal()</code> with any form from that mod. If it returns <code>null</code>, the mod is not loaded or the form doesn't exist.<br><br>
+                <strong>2. Toggle a feature:</strong> Read a global (get the current value), then write it back inverted: <code>newValue = currentValue === 0 ? 1 : 0</code>.<br><br>
+                <strong>3. Use quest forms:</strong> Always store Papyrus properties on quest forms. They persist across cell changes and are the most reliable host for script properties.<br><br>
+                <strong>4. Handle null:</strong> Always guard your reads: <code>if (val === null) { console.log('form not found'); }</code>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">API Timing Rules (Advanced)</div>
+            <div class="card-desc">
+                <code>window.prisma</code> is injected by PrismaUI_F4 before your view loads. It's safe to use in your <code>init()</code> function or later.<br><br>
+                <code>await prisma.getProperty()</code> and <code>await prisma.getGlobal()</code> return Promises. Always use <code>await</code> or <code>.then()</code>.<br><br>
+                <code>prisma.setGlobal()</code> is fire-and-forget — it doesn't return a result. Just send and continue.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-label">What This Plugin Demonstrates</div>
+            <div class="card-desc">
+                This example shows:<br>
+                • How to create a PrismaUI view with HTML/CSS/JS<br>
+                • How to inject the <code>window.prisma</code> API from C++<br>
+                • How to read/write Papyrus globals and properties from JS<br>
+                • How to send messages from JS back to C++<br>
+                • How to use callbacks from C++ to update the UI<br>
+                • How to log events for debugging<br><br>
+                Use this as a template for your own PrismaUI plugins. The source code is in <code>example-f4se-plugin/src/main.cpp</code> and <code>view/</code>.
+            </div>
+        </div>
+
+    </div>
 
     <div class="panel-footer">
         <div class="hint"><kbd>F3</kbd> Toggle · Check F4SE log for plugin output</div>
@@ -366,108 +467,8 @@
     </div>
 
 </div>
+<script src="script.js"></script>
 <script>
-    function tab(n) {
-        ['p','b','l'].forEach(function(x) {
-            document.getElementById('t'+x).classList.remove('active');
-            document.getElementById('tb'+x.toUpperCase()).classList.remove('active');
-        });
-        document.getElementById('t'+n).classList.add('active');
-        document.getElementById('tb'+n.toUpperCase()).classList.add('active');
-    }
-
-    var logEl = document.getElementById('log'), logEmpty = true;
-    function lg(cls, label, msg) {
-        if (logEmpty) { logEl.innerHTML = ''; logEmpty = false; }
-        var t = new Date().toTimeString().slice(0,8);
-        var e = document.createElement('div');
-        e.className = 'log-entry';
-        e.innerHTML = '<span class="lt">'+t+'</span><span class="ld '+cls+'">'+label+'</span><span class="lm">'+msg+'</span>';
-        logEl.appendChild(e);
-        if (logEl.children.length > 30) logEl.removeChild(logEl.children[0]);
-    }
-    function rv(id, s, t) { var e=document.getElementById(id); e.className='rv '+s; e.textContent=t; }
-
-    function doGetGlobal() {
-        var esp=document.getElementById('gbEsp').value.trim(), fid=document.getElementById('gbFid').value.trim();
-        if (!esp||!fid) { rv('gbRes','error','enter esp and formId'); return; }
-        if (!window.prisma) { rv('gbRes','error','window.prisma not available'); return; }
-        rv('gbRes','waiting','…');
-        lg('po','prisma→','getGlobal("'+esp+'","'+fid+'")');
-        window.prisma.getGlobal(esp,fid).then(function(v) {
-            if (v===null||v===undefined) { rv('gbRes','error','null — plugin absent or form not found'); lg('pi','←prisma','null'); }
-            else { rv('gbRes','ok',String(v)); lg('pi','←prisma',''+v); }
-        });
-    }
-    function doSetGlobal() {
-        var esp=document.getElementById('gbEsp').value.trim(), fid=document.getElementById('gbFid').value.trim();
-        var raw=document.getElementById('gbVal').value.trim(), v=parseFloat(raw);
-        if (!esp||!fid||raw===''||isNaN(v)) { lg('po','prisma→','setGlobal: missing/invalid fields'); return; }
-        if (!window.prisma) { lg('po','prisma→','window.prisma not available'); return; }
-        lg('po','prisma→','setGlobal("'+esp+'","'+fid+'",'+v+')');
-        window.prisma.setGlobal(esp,fid,v);
-    }
-    function doGetProp() {
-        var esp=document.getElementById('gpEsp').value.trim(), fid=document.getElementById('gpFid').value.trim();
-        var scr=document.getElementById('gpScript').value.trim(), prp=document.getElementById('gpProp').value.trim();
-        if (!esp||!fid||!scr||!prp) { rv('gpRes','error','fill in all four fields'); return; }
-        if (!window.prisma) { rv('gpRes','error','window.prisma not available'); return; }
-        rv('gpRes','waiting','…');
-        lg('po','prisma→','getProperty("'+esp+'","'+fid+'","'+scr+'","'+prp+'")');
-        window.prisma.getProperty(esp,fid,scr,prp).then(function(v) {
-            if (v===null||v===undefined) { rv('gpRes','error','null — form/script/prop not found or VM not ready'); lg('pi','←prisma','null'); }
-            else { rv('gpRes','ok',String(v)); lg('pi','←prisma',''+v); }
-        });
-    }
-    function doSetProp() {
-        var esp=document.getElementById('gpEsp').value.trim(), fid=document.getElementById('gpFid').value.trim();
-        var scr=document.getElementById('gpScript').value.trim(), prp=document.getElementById('gpProp').value.trim();
-        var raw=document.getElementById('gpVal').value.trim();
-        if (!esp||!fid||!scr||!prp||raw==='') { lg('po','prisma→','setProperty: missing fields'); return; }
-        if (!window.prisma) { lg('po','prisma→','window.prisma not available'); return; }
-        lg('po','prisma→','setProperty("'+esp+'","'+fid+'","'+scr+'","'+prp+'",'+raw+')');
-        window.prisma.setProperty(esp,fid,scr,prp,raw);
-    }
-
-    window.init = function() {
-        if (window.prisma) {
-            document.getElementById('paBadge').className='badge badge-green';
-            document.getElementById('paBadge').textContent='AVAILABLE';
-            document.getElementById('paText').textContent='window.prisma injected — ready to use';
-            document.getElementById('hdr').textContent='prisma ready';
-        } else {
-            document.getElementById('paBadge').className='badge badge-red';
-            document.getElementById('paBadge').textContent='NOT FOUND';
-            document.getElementById('paText').textContent='window.prisma missing — is PrismaUI_F4 running?';
-            document.getElementById('hdr').textContent='no prisma';
-        }
-        lg('cj','C++→JS','init() — DOM ready');
-    };
-
-    window.updateFocusLabel = function(msg) {
-        var focused = msg.indexOf('Focused') !== -1;
-        document.getElementById('focusLabel').textContent = msg;
-        var b = document.getElementById('focusBadge');
-        b.textContent = focused ? 'FOCUSED' : 'UNFOCUSED';
-        b.className   = 'badge ' + (focused ? 'badge-green' : 'badge-amber');
-        lg('cj','C++→JS','updateFocusLabel("'+msg+'")');
-    };
-
-    function sendMsg() {
-        var val = document.getElementById('msgIn').value.trim();
-        if (!val) return;
-        var p = JSON.stringify({message:val});
-        lg('jc','JS→C++','sendDataToF4SE('+p+')');
-        window.sendDataToF4SE(p);
-        document.getElementById('msgIn').value = '';
-    }
-    function closePanel() { lg('jc','JS→C++','requestClose()'); window.requestClose(); }
-    function testConsole() {
-        console.log('[PrismaUI Example] console.log test — check F4SE log');
-        console.warn('[PrismaUI Example] console.warn test');
-        lg('jc','JS→C++','console.log + console.warn fired');
-    }
-
     document.getElementById('msgIn').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') sendMsg();
     });

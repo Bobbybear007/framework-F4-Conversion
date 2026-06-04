@@ -249,3 +249,24 @@ Mouse wheel events are forwarded to the focused view. Scroll amount is tunable p
 ```cpp
 api->SetScrollingPixelSize(view, 40);  // default is 28 px per tick
 ```
+
+---
+
+## Example Plugin Reference
+
+The **PrismaUI-F4-Example** plugin demonstrates all of these patterns in a working plugin with four tabs:
+
+1. **Papyrus Bridge** — Reading globals and quest properties without C++ code
+2. **C++ Bridge** — Invoking JS from C++, and listening for JS callbacks
+3. **Event Log** — Debugging and tracing all JS↔C++ communication
+4. **Tutorial** — Comprehensive guide to all features
+
+The example plugin is located in `E:\F4SE OG\Prisma\PrismaUI_F4 New Gen\example-f4se-plugin\` and demonstrates:
+- DOM ready callback registration
+- JS listener event handling
+- Copy-to-clipboard integration from JS
+- Performance-optimized HTML with semantic markup (no CSS frameworks)
+- Proper error handling for null/undefined values
+- Threading best practices for JS↔C++ communication
+
+Build with: `.\build-and-deploy.bat`

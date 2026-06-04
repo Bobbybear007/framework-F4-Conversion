@@ -35,23 +35,6 @@ static void ResolveGlobalWrite(bool success) {
 }
 
 static bool CopyToSystemClipboard(const std::string& text) {
-    // Unescape JSON-escaped newlines (\n literal string -> actual newline)
-    std::string unescaped;
-    for (size_t i = 0; i < text.length(); ++i) {
-        if (text[i] == '\\' && i + 1 < text.length() && text[i + 1] == 'n') {
-            unescaped += '\n';
-            ++i;
-        } else if (text[i] == '\\' && i + 1 < text.length() && text[i + 1] == 't') {
-            unescaped += '\t';
-            ++i;
-        } else if (text[i] == '\\' && i + 1 < text.length() && text[i + 1] == 'r') {
-            unescaped += '\r';
-            ++i;
-        } else {
-            unescaped += text[i];
-        }
-    }
-
     if (!OpenClipboard(nullptr)) {
         REX::WARN("CopyToSystemClipboard: OpenClipboard failed");
         return false;
@@ -63,7 +46,7 @@ static bool CopyToSystemClipboard(const std::string& text) {
         return false;
     }
 
-    size_t len = unescaped.length() + 1;
+    size_t len = text.length() + 1;
     HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, len);
     if (!hGlob) {
         REX::WARN("CopyToSystemClipboard: GlobalAlloc failed");
@@ -79,7 +62,7 @@ static bool CopyToSystemClipboard(const std::string& text) {
         return false;
     }
 
-    memcpy(pBuf, unescaped.c_str(), len);
+    memcpy(pBuf, text.c_str(), len);
     GlobalUnlock(hGlob);
 
     if (!SetClipboardData(CF_TEXT, hGlob)) {
@@ -90,7 +73,7 @@ static bool CopyToSystemClipboard(const std::string& text) {
     }
 
     CloseClipboard();
-    REX::INFO("CopyToSystemClipboard: success ({} bytes, {} unescaped)", text.length(), unescaped.length());
+    REX::INFO("CopyToSystemClipboard: success ({} bytes)", text.length());
     return true;
 }
 
@@ -390,7 +373,9 @@ static void OnDomReady(PrismaView v)
         }
 
         if (cmd == "copyLog") {
-            std::string logText = PRISMA_UI_HELPER::GetJsonString(data, "logText");
+            std::string_view dataStr(data);
+            auto delimiterPos = dataStr.find('|');
+            std::string logText = (delimiterPos != std::string_view::npos) ? std::string(dataStr.substr(delimiterPos + 1)) : "";
             REX::INFO("EVENT: copyLog fired ({} bytes)", logText.length());
 
             bool success = CopyToSystemClipboard(logText);
@@ -406,15 +391,9 @@ static void OnDomReady(PrismaView v)
         REX::INFO("  Parsed message: '{}'", msg);
         REX::INFO("Received from JS: {}", msg);
 
-        // RE:: access is safe here — already on game thread.
-        // Example: read player health
-        // auto* player = RE::PlayerCharacter::GetSingleton();
-        // float hp = player->GetActorValue(*RE::ActorValue::GetSingleton()->health);
-
-        // Example: fire a Papyrus custom event on a quest form (see PrismaUI_F4_Helper.h).
-        // Requires a CustomEvent declared in a Papyrus script attached to the form.
-        // auto* form = RE::TESForm::GetFormByID(0x12345);
-        // PRISMA_UI_HELPER::SendPapyrusEvent(form, "OnDataReceived");
+        char script[512];
+        snprintf(script, sizeof(script), "if(window.lg)window.lg('pc','\\u2190C++','Message received: %s');", msg.c_str());
+        g_api->Invoke(g_view, script);
     });
 
 
