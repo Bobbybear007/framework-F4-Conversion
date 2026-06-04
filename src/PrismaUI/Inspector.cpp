@@ -17,16 +17,13 @@
 #endif
 
 namespace PrismaUI::Inspector {
-    // BGRA pixel format constant
-    constexpr uint32_t BYTES_PER_PIXEL = 4;
+    constexpr uint32_t BYTES_PER_PIXEL = 4;  // BGRA format
     using namespace Core;
 
     namespace {
         std::once_flag gInspectorAssetCheckFlag;
         std::atomic<bool> gInspectorAssetsAvailable{false};
     }
-
-    // ========== Asset Management ==========
 
     void EnsureInspectorAssetsAvailability() {
         const auto inspectorPath = Utils::GetBasePath() / "inspector" / "Main.html";
@@ -52,8 +49,6 @@ namespace PrismaUI::Inspector {
         EnsureInspectorAssetsAvailability();
         return gInspectorAssetsAvailable.load();
     }
-
-    // ========== Resource Management ==========
 
     void ReleaseInspectorTexture(PrismaView* viewData) {
         if (!viewData) {
@@ -93,8 +88,6 @@ namespace PrismaUI::Inspector {
         viewData->inspectorFrameReady.store(false);
         viewData->inspectorPointerHover.store(false);
     }
-
-    // ========== Inspector Lifecycle ==========
 
     void CreateInspectorView(const PrismaViewId& viewId) {
         if (!AreInspectorAssetsAvailable()) {
@@ -177,7 +170,6 @@ namespace PrismaUI::Inspector {
         viewData->inspectorPointerHover.store(false);
 
         if (visible && viewData->inspectorView) {
-            // Focus the inspector view when made visible
             auto focusInspector = [view = viewData]() {
                 if (view->inspectorView) {
                     view->inspectorView->Focus();

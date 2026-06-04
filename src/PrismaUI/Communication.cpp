@@ -96,7 +96,6 @@ namespace PrismaUI::Communication {
             return;
         }
 
-        // Inject window.L10N / window.t() if translations are registered for this view
         if (hasTranslations) {
             std::string l10nScript = Translations::BuildL10NScript(translationsCopy);
             if (!l10nScript.empty()) {
@@ -169,13 +168,10 @@ namespace PrismaUI::Communication {
 
     JSValueRef JSCallbackDispatcher(JSContextRef ctx, JSObjectRef function, [[maybe_unused]] JSObjectRef thisObject,
                                     size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
-        logger::debug("JSCallbackDispatcher: Entered.");
-
         Core::JSCallbackData* callbackDataPtr = static_cast<Core::JSCallbackData*>(JSObjectGetPrivate(function));
 
         if (!callbackDataPtr) {
-            logger::error(
-                "JSCallbackDispatcher: Failed to get private data (C++ JSCallbackData*) from function object.");
+            logger::error("JSCallbackDispatcher: Missing private callback data");
             if (exception) {
                 JSStringRef errorStr = JSStringCreateWithUTF8CString(
                     "Internal C++ error: private data (callback ptr) missing for JS callback.");
@@ -184,15 +180,10 @@ namespace PrismaUI::Communication {
             }
             return JSValueMakeNull(ctx);
         }
-        logger::debug("JSCallbackDispatcher: Private data (C++ JSCallbackData*) retrieved. Name: '{}', ViewID: '{}'",
-                      callbackDataPtr->name, callbackDataPtr->viewId);
 
         Core::PrismaViewId retrievedViewId = callbackDataPtr->viewId;
         std::string retrievedName = callbackDataPtr->name;
         Core::SimpleJSCallback targetCallback = callbackDataPtr->callback;
-
-        logger::debug("JSCallbackDispatcher: Retrieved from C++ pointer -> View ID: '{}', Name: '{}'", retrievedViewId,
-                      retrievedName);
 
         std::string paramStrData;
         if (argumentCount > 0) {

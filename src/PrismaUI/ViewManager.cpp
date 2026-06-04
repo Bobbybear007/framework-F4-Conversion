@@ -25,9 +25,7 @@ namespace PrismaUI::ViewManager {
 
         Core::PrismaViewId newViewId = generator.generate();
 
-        // External URLs are blocked — only file:// paths are permitted.
-        // A malicious mod calling CreateView("https://evil.com/...") would load a remote
-        // page into a game process with full F4SE/RE:: access. Reject at the source.
+        // Security: Reject external URLs to prevent loading remote content with F4SE access
         if (htmlPath.substr(0, 7) == "http://" || htmlPath.substr(0, 8) == "https://") {
             logger::error("[PrismaUI Security] CreateView blocked: external URL '{}' is not permitted. "
                           "Only local file paths relative to Data/PrismaUI_F4/views/ are allowed.",
@@ -67,8 +65,7 @@ namespace PrismaUI::ViewManager {
         return newViewId;
     }
 
-    // Helper function to perform unfocus operations (used by Hide, Unfocus, and Focus)
-    // closeFocusMenu: whether to close FocusMenu (false when switching focus between views)
+    // closeFocusMenu: false when switching focus between views (skip menu close in that case)
     static void PerformUnfocusOperations(const Core::PrismaViewId& viewId, std::shared_ptr<PrismaView> viewData,
                                          bool closeFocusMenu = true) {
         if (!viewData || !viewData->ultralightView) {
@@ -146,10 +143,8 @@ namespace PrismaUI::ViewManager {
                     return;
                 }
 
-                // If view has focus, unfocus it first
                 if (viewData->ultralightView && viewData->ultralightView->HasFocus()) {
                     PerformUnfocusOperations(viewId, viewData);
-                    logger::debug("Hide: View [{}] was focused, unfocused it.", viewId);
                 }
 
                 viewData->isHidden = true;

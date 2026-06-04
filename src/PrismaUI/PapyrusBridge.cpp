@@ -14,10 +14,7 @@
 
 namespace PrismaUI::PapyrusBridge {
 
-// ---------------------------------------------------------------------------
-// JS bridge — creates window.prisma
-// __prisma_request is a native C++ function already on window before this runs.
-// ---------------------------------------------------------------------------
+// Builds window.prisma and communicates via __prisma_request
 static constexpr const char* kBridgeScript = R"js(
 (function() {
     'use strict';
@@ -78,9 +75,7 @@ static constexpr const char* kBridgeScript = R"js(
 })();
 )js";
 
-// ---------------------------------------------------------------------------
-// Minimal JSON field extractors — avoids external JSON library dependency
-// ---------------------------------------------------------------------------
+// Minimal JSON field extractors (avoids external JSON library dependency)
 static std::string JsonGetString(const std::string& json, const std::string& key) {
     auto kp = "\"" + key + "\":\"";
     auto p  = json.find(kp);
@@ -98,10 +93,7 @@ static double JsonGetDouble(const std::string& json, const std::string& key) {
     try { return std::stod(json.substr(p)); } catch (...) { return 0.0; }
 }
 
-// ---------------------------------------------------------------------------
-// Game data helpers — run on game thread only
-// ---------------------------------------------------------------------------
-
+// Game data helpers (run on game thread only)
 // Resolve (esp, formIdHex) to a TESForm*
 static RE::TESForm* LookupFormByPlugin(const std::string& esp, const std::string& formIdHex) {
     uint32_t localId = 0;

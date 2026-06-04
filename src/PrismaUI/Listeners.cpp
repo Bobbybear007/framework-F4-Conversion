@@ -55,12 +55,10 @@ namespace PrismaUI::Listeners {
         if (!is_main_frame) return;
         logger::info("View [{}]: LoadListener: Window object ready.", viewId_);
 
-        // ── Inject window.prisma Papyrus bridge ──────────────────────────────────
-        // Runs BEFORE page scripts so JS code can access window.prisma from load time.
+        // Inject window.prisma before page scripts load
         PapyrusBridge::InjectBridge(caller, viewId_);
 
-        // ── Network sandbox (Layer 1: JS kill + Layer 2: CSP meta) ─────────────────
-        // Runs BEFORE page scripts. configurable:false descriptors cannot be reversed.
+        // Network sandbox: JS kill + CSP meta. Runs before page scripts.
         {
             ultralight::String exc;
             caller->EvaluateScript(ultralight::String(NetworkSandbox::kNetworkBlockScript), &exc);
@@ -107,7 +105,7 @@ namespace PrismaUI::Listeners {
 
     MyViewListener::~MyViewListener() = default;
 
-    // ── Layer 3: Block child view creation (window.open, target=_blank) ──────────
+    // Block child view creation (window.open, target=_blank)
     RefPtr<View> MyViewListener::OnCreateChildView(View* /*caller*/, const String& /*opener_url*/,
                                                     const String& target_url, bool /*is_popup*/,
                                                     const IntRect& /*popup_rect*/) {
@@ -118,8 +116,7 @@ namespace PrismaUI::Listeners {
 
     void MyViewListener::OnAddConsoleMessage(ultralight::View* /*caller*/,
                                               const ultralight::ConsoleMessage& message) {
-        // ── Layer 4: Log network-source messages ───────────────────────────────────
-        // kMessageSource_Network errors indicate blocked resource loads or CSP violations.
+        // kMessageSource_Network errors indicate blocked resource loads or CSP violations
         if (message.source() == kMessageSource_Network) {
             logger::warn("[PrismaUI Security] View [{}]: [Network] {}", viewId_, message.message().utf8().data());
         }
@@ -179,7 +176,5 @@ namespace PrismaUI::Listeners {
     // MyUltralightLogger
     MyUltralightLogger::~MyUltralightLogger() = default;
 
-    void MyUltralightLogger::LogMessage(LogLevel /*log_level*/, const String& /*message*/) {
-        // Implementation was empty, so keep it empty.
-    }
+    void MyUltralightLogger::LogMessage(LogLevel /*log_level*/, const String& /*message*/) {}
 }  // namespace PrismaUI::Listeners

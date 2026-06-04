@@ -89,7 +89,6 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_intfc)
         .trampolineSize = 1 << 10
     });
 
-    // Check for conflicting overlay software IMMEDIATELY - before game launches
     g_overlayDetected = IsConflictingOverlayRunning();
     if (g_overlayDetected) {
         logger::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -97,13 +96,8 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_intfc)
         logger::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         logger::warn("Detected: {}", g_detectedOverlayName);
         logger::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-
-        // Show alert popup and exit IMMEDIATELY - before game window opens, before intro
         NotifyUserOverlayDetected();
-        // Function calls exit(1), never returns here
     }
-
-    // Register message handler for normal operation (no overlay detected)
     const auto* messaging = F4SE::GetMessagingInterface();
     if (!messaging) {
         logger::critical("Failed to get F4SE messaging interface!");

@@ -121,12 +121,11 @@ namespace PrismaUI::InputHandler {
         g_ultralightThreadExecutor->submit(install);
     }
 
-    // Clipboard helper functions
     std::string EscapeForJS(const std::string& text) {
         std::string escaped;
 
         try {
-            escaped.reserve(text.size() * 2);  // Reserve extra space for escape sequences
+            escaped.reserve(text.size() * 2);
         } catch (const std::exception& e) {
             logger::error("Failed to allocate memory for escaped text: {}", e.what());
             return "";
@@ -135,10 +134,8 @@ namespace PrismaUI::InputHandler {
         for (size_t i = 0; i < text.size(); ++i) {
             unsigned char c = static_cast<unsigned char>(text[i]);
 
-            // Handle multi-byte UTF-8 sequences
             if (c >= 0x80) {
-                // Check for Unicode line/paragraph separators (U+2028, U+2029)
-                // U+2028 = E2 80 A8, U+2029 = E2 80 A9
+                // Check for Unicode line/paragraph separators (U+2028 = E2 80 A8, U+2029 = E2 80 A9)
                 if (i + 2 < text.size() && c == 0xE2 && static_cast<unsigned char>(text[i + 1]) == 0x80 &&
                     (static_cast<unsigned char>(text[i + 2]) == 0xA8 ||
                      static_cast<unsigned char>(text[i + 2]) == 0xA9)) {
@@ -147,12 +144,10 @@ namespace PrismaUI::InputHandler {
                     i += 2;
                     continue;
                 }
-                // Pass through other UTF-8 sequences
                 escaped += c;
                 continue;
             }
 
-            // Handle special characters and control codes
             switch (c) {
                 case '\'':
                     escaped += "\\'";
@@ -179,9 +174,7 @@ namespace PrismaUI::InputHandler {
                     escaped += "\\f";
                     break;
                 default:
-                    // Filter out dangerous control characters (0x00-0x1F except handled above)
                     if (c < 0x20) {
-                        // Skip null bytes and other control characters
                         logger::trace("Filtered control character: 0x{:02X}", static_cast<int>(c));
                     } else {
                         escaped += c;
@@ -210,7 +203,6 @@ namespace PrismaUI::InputHandler {
             return "";
         }
 
-        // Check size before converting
         SIZE_T dataSize = GlobalSize(hData);
         if (dataSize > MAX_CLIPBOARD_SIZE) {
             logger::warn("Clipboard text too large: {} bytes (max: {} bytes). Truncating.", dataSize,
@@ -220,7 +212,6 @@ namespace PrismaUI::InputHandler {
             return "";
         }
 
-        // Convert wide string to UTF-8
         int utf8Length = WideCharToMultiByte(CP_UTF8, 0, pszText, -1, nullptr, 0, nullptr, nullptr);
         if (utf8Length <= 0) {
             GlobalUnlock(hData);
@@ -228,7 +219,6 @@ namespace PrismaUI::InputHandler {
             return "";
         }
 
-        // Check character count limit
         size_t charCount = wcslen(pszText);
         if (charCount > MAX_CLIPBOARD_CHARS) {
             logger::warn("Clipboard text too long: {} characters (max: {} characters). Truncating.", charCount,
@@ -256,7 +246,6 @@ namespace PrismaUI::InputHandler {
     }
 
     void SetClipboardText(const std::string& text) {
-        // Check size limits before processing
         if (text.size() > MAX_CLIPBOARD_SIZE) {
             logger::warn("Text too large to copy to clipboard: {} bytes (max: {} bytes)", text.size(),
                          MAX_CLIPBOARD_SIZE);
@@ -269,8 +258,6 @@ namespace PrismaUI::InputHandler {
         }
 
         EmptyClipboard();
-
-        // Convert UTF-8 to wide string
         int wideLength = MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, nullptr, 0);
         if (wideLength <= 0) {
             CloseClipboard();
@@ -418,9 +405,7 @@ namespace PrismaUI::InputHandler {
         }
 
         if (g_isAnyInputCaptureActive.load()) {
-            // Hide the Win32 hardware cursor whenever PrismaUI has input focus.
-            // WM_SETCURSOR fires on every mouse move; returning TRUE stops Windows
-            // from restoring the arrow cursor over our HTML cursor.
+            // WM_SETCURSOR fires on every mouse move; return TRUE to prevent Windows restoring cursor
             if (uMsg == WM_SETCURSOR) {
                 SetCursor(NULL);
                 return TRUE;
@@ -442,7 +427,6 @@ namespace PrismaUI::InputHandler {
 
                 switch (uMsg) {
                     case WM_KEYDOWN: {
-                        // Handle Ctrl+V (Paste)
                         if ((GetKeyState(VK_CONTROL) & 0x8000) && wParam == 'V') {
                             const bool viewHasInputFieldFocus = g_isFocusedTextInputActive.load();
                             if (viewHasInputFieldFocus) {

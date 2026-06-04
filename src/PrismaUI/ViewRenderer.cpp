@@ -51,7 +51,6 @@ namespace PrismaUI::ViewRenderer {
             surface->ClearDirtyBounds();
         }
 
-        // Render inspector view if visible
         Inspector::RenderInspectorView(viewData);
     }
 
@@ -123,19 +122,12 @@ namespace PrismaUI::ViewRenderer {
         if (!viewData) return;
 
         if (viewData->pendingResourceRelease.load()) {
-            logger::debug(
-                "UpdateSingleTextureFromBuffer: Releasing D3D resources for View [{}] based on pendingResourceRelease "
-                "flag",
-                viewData->id);
-
             ReleaseViewTexture(viewData.get());
             Inspector::ReleaseInspectorTexture(viewData.get());
-
             viewData->pendingResourceRelease = false;
             return;
         }
 
-        // Update main view texture if frame is ready
         const bool mainFrameReady = viewData->newFrameReady.exchange(false);
         if (mainFrameReady) {
             std::lock_guard lock(viewData->bufferMutex);
@@ -145,7 +137,7 @@ namespace PrismaUI::ViewRenderer {
             }
         }
 
-        // Update inspector texture independently (don't gate on main view frame)
+        // Inspector texture updated independently
         if (viewData->inspectorVisible.load() && viewData->inspectorFrameReady.exchange(false)) {
             std::lock_guard inspectorLock(viewData->inspectorBufferMutex);
             if (!viewData->inspectorPixelBuffer.empty() && viewData->inspectorBufferWidth > 0 &&
@@ -233,8 +225,7 @@ namespace PrismaUI::ViewRenderer {
             return;
         }
 
-        // Force hide the vanilla game cursor every frame if input is captured.
-        // The engine continuously sets it to visible when unpaused, so doing it once is not enough.
+        // Engine continuously restores cursor visibility when unpaused, so hide every frame
         auto ui = RE::UI::GetSingleton();
         if (ui) {
             auto cursorMenu = ui->GetMenu("CursorMenu");

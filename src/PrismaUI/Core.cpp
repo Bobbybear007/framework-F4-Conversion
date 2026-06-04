@@ -69,14 +69,8 @@ namespace {
     };
 
     void SEHTranslator(unsigned int code, EXCEPTION_POINTERS* ep) {
-        // Stack overflow cannot be safely translated to a C++ exception because
-        // exception handling requires stack space for unwinding, which we don't have.
-        // Let it propagate as an SEH exception - the system will terminate the
-        // process.
+        // Stack overflow: cannot throw (no stack for unwinding). System will terminate gracefully.
         if (code == EXCEPTION_STACK_OVERFLOW) {
-            // Don't throw - just return and let the SEH continue
-            // The process will likely terminate, but that's safer than undefined
-            // behavior
             return;
         }
         throw SEHException(code, ep);
