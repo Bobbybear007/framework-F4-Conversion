@@ -1,10 +1,7 @@
 // example-f4se-plugin/src/main.cpp
-//
-// Demonstrates PrismaUI_F4 integration using NewCommonLib (xmake-based CommonLibF4):
-//   - F4SE_PLUGIN_VERSION / F4SE_PLUGIN_LOAD macros replace F4SEPlugin_Query.
-//   - F4SE::Init() sets up logging automatically — no manual spdlog setup needed.
-//   - REX::INFO / REX::WARN / REX::CRITICAL replace logger::info / logger::warn.
-//   - All other PrismaUI_F4 API usage is unchanged.
+// PrismaUI_F4 integration using NewCommonLib.
+// F4SE_PLUGIN_LOAD replaces F4SEPlugin_Query/Load pair.
+// F4SE::Init() handles logging; REX:: macros for logging.
 #include "PCH.h"
 #include "PrismaUI_F4_API.h"
 #include "PrismaUI_F4_Helper.h"
@@ -29,14 +26,6 @@ static void ResolvePrismaProperty(float value) {
     g_api->Invoke(g_view, script);
 }
 
-static void ResolvePropertyWrite(bool success) {
-    if (!g_api || !g_api->IsValid(g_view)) return;
-    const char* result = success ? "true" : "false";
-    char script[128];
-    snprintf(script, sizeof(script), "if(window._resolvePropertyWrite)window._resolvePropertyWrite(%s);", result);
-    g_api->Invoke(g_view, script);
-}
-
 static void ResolveGlobalWrite(bool success) {
     if (!g_api || !g_api->IsValid(g_view)) return;
     const char* result = success ? "true" : "false";
@@ -46,6 +35,23 @@ static void ResolveGlobalWrite(bool success) {
 }
 
 static bool CopyToSystemClipboard(const std::string& text) {
+    // Unescape JSON-escaped newlines (\n literal string -> actual newline)
+    std::string unescaped;
+    for (size_t i = 0; i < text.length(); ++i) {
+        if (text[i] == '\\' && i + 1 < text.length() && text[i + 1] == 'n') {
+            unescaped += '\n';
+            ++i;
+        } else if (text[i] == '\\' && i + 1 < text.length() && text[i + 1] == 't') {
+            unescaped += '\t';
+            ++i;
+        } else if (text[i] == '\\' && i + 1 < text.length() && text[i + 1] == 'r') {
+            unescaped += '\r';
+            ++i;
+        } else {
+            unescaped += text[i];
+        }
+    }
+
     if (!OpenClipboard(nullptr)) {
         REX::WARN("CopyToSystemClipboard: OpenClipboard failed");
         return false;
@@ -57,7 +63,7 @@ static bool CopyToSystemClipboard(const std::string& text) {
         return false;
     }
 
-    size_t len = text.length() + 1;
+    size_t len = unescaped.length() + 1;
     HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, len);
     if (!hGlob) {
         REX::WARN("CopyToSystemClipboard: GlobalAlloc failed");
@@ -73,7 +79,7 @@ static bool CopyToSystemClipboard(const std::string& text) {
         return false;
     }
 
-    memcpy(pBuf, text.c_str(), len);
+    memcpy(pBuf, unescaped.c_str(), len);
     GlobalUnlock(hGlob);
 
     if (!SetClipboardData(CF_TEXT, hGlob)) {
@@ -84,16 +90,14 @@ static bool CopyToSystemClipboard(const std::string& text) {
     }
 
     CloseClipboard();
-    REX::INFO("CopyToSystemClipboard: success ({} bytes)", len - 1);
+    REX::INFO("CopyToSystemClipboard: success ({} bytes, {} unescaped)", text.length(), unescaped.length());
     return true;
 }
 
 static void OnDomReady(PrismaView v)
 {
-    // DOM is ready — register listeners and push initial state.
-    // BindUIEvent callbacks fire on the game thread — RE:: access is safe directly.
-    // RegisterJSListener callbacks fire on the Ultralight render thread — use AddTask for RE::.
-    // window.prisma is already injected by PrismaUI_F4 before this callback fires.
+    // BindUIEvent callbacks fire on game thread; RegisterJSListener on Ultralight thread.
+    // window.prisma is injected by PrismaUI_F4 before this callback.
 
     g_api->RegisterConsoleCallback(v, [](PrismaView, PRISMA_UI_API::ConsoleMessageLevel lvl, const char* msg) {
         switch (lvl) {
@@ -103,7 +107,6 @@ static void OnDomReady(PrismaView v)
         }
     });
 
-    // BindUIEvent — fires on the game thread. RE:: access works directly inside the callback.
     g_api->BindUIEvent(v, "requestClose", [](const char*) {
         REX::INFO("EVENT: requestClose fired");
         g_visible = false;
@@ -113,10 +116,6 @@ static void OnDomReady(PrismaView v)
         g_api->Hide(g_view);
         REX::INFO("  Called Hide");
     });
-
-    // Receives JSON from JS: { "message": "..." }
-    // GetJsonString parses the value without pulling in a full JSON library.
-    // window.prisma is already auto-injected by PrismaUI_F4 — no injection needed here.
 
     g_api->BindUIEvent(v, "sendPrismaRequest", [](const char* request) {
         REX::INFO("====================================");
@@ -290,54 +289,29 @@ static void OnDomReady(PrismaView v)
 
                 for (auto& attached : it->second) {
                     auto* obj = attached.get();
-                    if (!obj) {
-                        REX::WARN("    Script object is null, skipping");
-                        continue;
-                    }
+                    if (!obj) continue;
 
-                    // Match script name
                     auto* typeInfo = obj->GetTypeInfo();
-                    if (!typeInfo) {
-                        REX::WARN("    Script has no type info, skipping");
-                        continue;
-                    }
+                    if (!typeInfo) continue;
 
-                    std::string scriptName = typeInfo->GetName();
-                    REX::INFO("    Checking script: '{}'", scriptName);
+                    if (std::string_view(typeInfo->GetName()) != script) continue;
 
-                    if (scriptName != script) {
-                        REX::INFO("      Script name mismatch (looking for '{}')", script);
-                        continue;
-                    }
-
-                    REX::INFO("      SCRIPT MATCH FOUND!");
-
-                    // Property found — extract value
                     auto* prop_val = obj->GetProperty(RE::BSFixedString(prop.c_str()));
-                    if (!prop_val) {
-                        REX::WARN("      Property '{}' NOT FOUND on script", prop);
-                        continue;
-                    }
+                    if (!prop_val) continue;
 
-                    REX::INFO("      Property found!");
-
-                    // Extract numeric value using RE::BSScript::get<T> template
                     try {
-                        // Try float first (most common for game properties)
                         value = RE::BSScript::get<float>(*prop_val);
                         REX::INFO("getProperty SUCCESS: {}:{}.{}.{} = {} (float)", esp, fid, script, prop, value);
                     } catch (...) {
-                        // Try int if float fails
                         try {
                             value = static_cast<float>(RE::BSScript::get<std::int32_t>(*prop_val));
                             REX::INFO("getProperty SUCCESS: {}:{}.{}.{} = {} (int)", esp, fid, script, prop, value);
                         } catch (...) {
-                            // Try bool as last resort
                             try {
                                 value = RE::BSScript::get<bool>(*prop_val) ? 1.0f : 0.0f;
                                 REX::INFO("getProperty SUCCESS: {}:{}.{}.{} = {} (bool)", esp, fid, script, prop, value);
                             } catch (...) {
-                                REX::WARN("getProperty: Failed to extract value — unsupported property type");
+                                REX::WARN("getProperty: unsupported property type");
                                 value = 0.0f;
                             }
                         }
@@ -352,97 +326,6 @@ static void OnDomReady(PrismaView v)
             } catch (const std::exception& e) {
                 REX::WARN("getProperty EXCEPTION: {}", e.what());
                 ResolvePrismaProperty(0.0f);
-            }
-
-        } else if (type == "setProperty") {
-            std::string esp = PRISMA_UI_HELPER::GetJsonString(req, "esp");
-            std::string fid = PRISMA_UI_HELPER::GetJsonString(req, "formId");
-            std::string script = PRISMA_UI_HELPER::GetJsonString(req, "script");
-            std::string prop = PRISMA_UI_HELPER::GetJsonString(req, "property");
-            float value = PRISMA_UI_HELPER::GetJsonFloat(req, "value");
-
-            if (esp.empty() || fid.empty() || script.empty() || prop.empty()) {
-                REX::WARN("sendPrismaRequest: setProperty missing required fields");
-                ResolvePropertyWrite(false);
-                return;
-            }
-
-            try {
-                auto localFormId = std::stoul(fid, nullptr, 16);
-                auto* handler = RE::TESDataHandler::GetSingleton();
-                auto formId = handler->LookupFormID(localFormId, esp.c_str());
-                auto* form = RE::TESForm::GetFormByID(formId);
-
-                if (!form) {
-                    REX::INFO("setProperty: form {}:{} not found", esp, fid);
-                    ResolvePropertyWrite(false);
-                    return;
-                }
-
-                auto* vm = RE::GameVM::GetSingleton()->GetVM().get();
-                if (!vm) {
-                    REX::WARN("setProperty: Papyrus VM not ready");
-                    ResolvePropertyWrite(false);
-                    return;
-                }
-
-                auto handle = vm->GetObjectHandlePolicy().GetHandleForObject(static_cast<uint32_t>(form->GetFormType()), form);
-                auto* concreteVM = static_cast<RE::BSScript::Internal::VirtualMachine*>(vm);
-
-                RE::BSAutoLock lock(concreteVM->attachedScriptsLock);
-                auto it = concreteVM->attachedScripts.find(handle);
-
-                if (it != concreteVM->attachedScripts.end()) {
-                    for (auto& attached : it->second) {
-                        auto* obj = attached.get();
-                        if (!obj) continue;
-
-                        auto* typeInfo = obj->GetTypeInfo();
-                        if (!typeInfo || std::string_view(typeInfo->GetName()) != script) {
-                            continue;
-                        }
-
-                        auto* prop_val = obj->GetProperty(RE::BSFixedString(prop.c_str()));
-                        if (prop_val) {
-                            // Write value with type coercion:
-                            // Try assigning as float first, then try int, then bool
-                            bool writeSuccess = false;
-
-                            // Try float assignment
-                            try {
-                                *prop_val = value;
-                                REX::INFO("setProperty: {}:{}.{}={} (float)", fid, script, prop, value);
-                                writeSuccess = true;
-                            } catch (...) {
-                                // Try int assignment
-                                try {
-                                    *prop_val = static_cast<std::int32_t>(value);
-                                    REX::INFO("setProperty: {}:{}.{}={} (int)", fid, script, prop, static_cast<std::int32_t>(value));
-                                    writeSuccess = true;
-                                } catch (...) {
-                                    // Try bool assignment
-                                    try {
-                                        *prop_val = (value != 0.0f);
-                                        REX::INFO("setProperty: {}:{}.{}={} (bool)", fid, script, prop, (value != 0.0f) ? 1 : 0);
-                                        writeSuccess = true;
-                                    } catch (...) {
-                                        REX::WARN("setProperty: failed to write property — unsupported type");
-                                    }
-                                }
-                            }
-
-                            ResolvePropertyWrite(writeSuccess);
-                            return;
-                        }
-                    }
-                }
-
-                REX::INFO("setProperty: {}:{} has no script '{}' or property '{}'", esp, fid, script, prop);
-                ResolvePropertyWrite(false);
-
-            } catch (const std::exception& e) {
-                REX::WARN("sendPrismaRequest: setProperty invalid formId '{}': {}", fid, e.what());
-                ResolvePropertyWrite(false);
             }
 
         } else {
@@ -552,13 +435,6 @@ static void CreateViews()
         }
         // Views start hidden — show explicitly on toggle.
     } else {
-        // View exists and is still valid (game reload / view reuse case)
-        // Behavior depends on BindUIEvent vs RegisterJSListener persistence:
-        // - BindUIEvent: guaranteed to persist across reloads (safe to skip re-registration)
-        // - RegisterJSListener: may not persist (requires re-registration in OnDomReady)
-        // Current implementation uses only BindUIEvent, so re-registration is optional.
-        // FUTURE: If RegisterJSListener callbacks are added, uncomment OnDomReady() call:
-        // OnDomReady(g_view);
         REX::INFO("View reused on reload: {}", g_view);
     }
 }
@@ -608,10 +484,6 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* message)
     }
 }
 
-// NewCommonLib pattern: F4SE_PLUGIN_LOAD replaces the old F4SEPlugin_Query + F4SEPlugin_Load pair.
-// F4SE_PLUGIN_VERSION is generated by the commonlibf4.plugin xmake rule from xmake.lua metadata.
-// F4SE::Init() automatically creates the log file at:
-//   %USERPROFILE%\Documents\My Games\Fallout4\F4SE\PrismaUI-F4-Example-Plugin.log
 F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_intfc)
 {
     F4SE::Init(a_intfc);
