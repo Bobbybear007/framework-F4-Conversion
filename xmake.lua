@@ -1,14 +1,14 @@
 -- PrismaUI_F4 New Gen / xmake.lua
 --
--- Requires NewCommonLib built first:
---   cd E:\F4SE OG\Prisma\NewCommonLib && xmake
+-- Multi-runtime build supporting both Fallout 4 Original and Next Gen
 --
--- Requires Ultralight SDK extracted (cmake configure did this, or run manually):
---   7z x external\ultralight-free-sdk-1.4.1-dev-win-x64.7z -o build\external_builds\ultralight
+-- Requirements:
+--   1. CommonLibF4 submodule at lib/commonlibf4 (initialized via git submodule update --recursive)
+--   2. Ultralight SDK 1.4.0 auto-extracted to build/ultralight-1.4.0/ by build tools
 --
--- Deploy paths (set env vars for auto-install on `xmake install`):
---   XSE_FO4_MODS_PATH  — MO2 mods folder root
---   XSE_FO4_GAME_PATH  — Fallout 4 Data folder
+-- Deployment (optional):
+--   Set environment variables for auto-deploy:
+--   - XSE_FO4_MODS_PATH: MO2 mods folder root (or use build tools config)
 
 set_xmakever("3.0.0")
 set_project("PrismaUI_F4")
@@ -24,14 +24,11 @@ add_requires("directxtk")
 -- version+configs here makes it available for direct inclusion in PCH.h.
 add_requires("spdlog v1.16.0", { configs = { header_only = false, wchar = true, std_format = true } })
 
-local game_ver = os.getenv("PRISMA_TARGET") or "ng"
-if game_ver == "og" then
-    includes("E:/F4SE OG/CommonLibF4")
-else
-    includes("lib/commonlibf4")
-end
+-- Use CommonLibF4 (supports both OG and NG with single DLL)
+-- Multi-runtime capable version
+includes("lib/commonlibf4")
 -- Ultralight 1.4.0 SDK
--- Run setup.bat once before building to extract external/ultralight-sdk-1.4.0-win-x64.7z
+-- Auto-extracted to build/ultralight-1.4.0/ by build tools if missing
 local UL_ROOT      = path.join(os.scriptdir(), "build", "ultralight-1.4.0")
 local UL_INCLUDE   = UL_ROOT .. "/include"
 local UL_LIB       = UL_ROOT .. "/lib"
@@ -40,21 +37,18 @@ local UL_RESOURCES = UL_ROOT .. "/resources"
 
 if not os.isdir(UL_INCLUDE) then
     print("ERROR: Ultralight SDK not found at: " .. UL_ROOT)
-    print("Run setup.bat first to extract the SDK")
+    print("The build tools automatically extract the SDK if missing.")
+    print("If running xmake directly, extract: external/ultralight-sdk-1.4.0-win-x64.7z")
     os.exit(1)
 end
 
 target("PrismaUI_F4")
     set_kind("shared")
     set_filename("PrismaUI_F4.dll")
+    set_symbols("debug")
 
-    -- F4SE plugin version data auto-generated from these fields.
-    -- Log file: %USERPROFILE%\Documents\My Games\Fallout4\F4SE\PrismaUI_F4.log
-    add_rules("commonlibf4.plugin", {
-        name    = "PrismaUI_F4",
-        author  = "PrismaUI",
-        version = "1.0.0"
-    })
+    -- Add CommonLibF4 dependency
+    add_deps("commonlibf4")
 
     -- Sources
     add_includedirs("src")
@@ -75,9 +69,6 @@ target("PrismaUI_F4")
         { force = true }
     )
     add_links("delayimp")
-
-    -- WinRT headers (needed by Ultralight)
-    add_includedirs("C:/Program Files (x86)/Windows Kits/10/Include/10.0.26100.0/winrt")
 
     -- Packages
     add_packages("minhook", "directxtk", "spdlog")

@@ -208,14 +208,15 @@
         </div>
 
         <div class="card">
-            <div class="card-label">Papyrus Auto Property — read a script property on any form</div>
+            <div class="card-label">Papyrus Auto Property — read / write a script property on any form</div>
             <div class="card-desc">
-                <code>const val = await prisma.getProperty(esp, formId, scriptName, propName)</code><br><br>
+                <code>const val = await prisma.getProperty(esp, formId, scriptName, propName)</code><br>
+                <code>prisma.setProperty(esp, formId, scriptName, propName, value)</code> → fire-and-forget write<br><br>
                 The form must have <code>scriptName</code> attached with the property declared <code>Auto</code>.
                 Quest forms are the most reliable host — they persist across cell changes.
                 Supports <code>float</code>, <code>int</code>, <code>bool</code> only (no strings, no arrays).
-                Always call after <code>kPostLoadGame</code> — the Papyrus VM is not ready before that.
-                <strong>Note:</strong> Property writes are not supported — Papyrus properties cannot be modified after initialization via F4SE.
+                Always call after <code>kPostLoadGame</code> — the Papyrus VM is not ready before that.<br>
+                <strong>Note:</strong> Direct writes modify the backing variable in the VM but do not trigger custom Papyrus getter/setter functions or events automatically.
             </div>
             <div class="form-grid form-grid-2">
                 <div class="field">
@@ -241,6 +242,17 @@
                     <div class="result-label">Result:</div>
                     <div class="rv" id="gpRes">— awaiting —</div>
                 </div>
+            </div>
+            <hr class="d">
+            <div class="form-grid">
+                <div class="field">
+                    <div class="field-label">New value (number/bool)</div>
+                    <input id="gpVal" type="text" placeholder="1.5 (or 1 for true, 0 for false)" />
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="g" onclick="doSetProp()">Write Property</button>
+                <span style="font-size:11px;color:rgba(255,255,255,0.22)">Uses plugin/form/script/property above. Read back to confirm.</span>
             </div>
         </div>
 
@@ -364,10 +376,9 @@
         <div class="card">
             <div class="card-label">Papyrus Bridge — What It Does</div>
             <div class="card-desc">
-                <strong>Read Globals:</strong> Get the current value of a <code>TESGlobal</code> form from any loaded mod. Type the plugin name and the form's local hex ID (without the file-index byte).<br><br>
-                <strong>Write Globals:</strong> Set a new value for a global. Enter a number and click <strong>Write Global</strong>. The change happens instantly in memory.<br><br>
-                <strong>Read Properties:</strong> Get the value of an <code>Auto</code> property from a Papyrus script attached to any form. Requires all 4 fields: plugin, form ID, script name, and property name.<br><br>
-                <strong>Why no property writes?</strong> Papyrus scripts finalize their property values when the script initializes. After that, F4SE cannot modify them from outside the game thread. Workaround: use a global variable instead.
+                <strong>Read/Write Globals:</strong> Get or set the value of a <code>TESGlobal</code> form from any loaded mod. Type the plugin name and the form's local hex ID (without the file-index byte). The change happens instantly in memory.<br><br>
+                <strong>Read/Write Properties:</strong> Get or set the value of an <code>Auto</code> property from a Papyrus script attached to any form. Requires all fields: plugin, form ID, script name, and property name.<br><br>
+                <strong>Direct Writes Note:</strong> Writing to properties directly updates the Papyrus VM's instance variable, but it does not execute Papyrus function code automatically. If you need script code to execute when a property changes, poll the value in Papyrus (e.g. via <code>RegisterForSingleUpdate</code>) or use MCM callbacks.
             </div>
         </div>
 

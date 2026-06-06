@@ -80,6 +80,18 @@ function doGetProp() {
         else { rv('gpRes','ok',String(v)); lg('pi','←prisma',''+v); }
     });
 }
+function doSetProp() {
+    var gpEspEl=document.getElementById('gpEsp'), gpFidEl=document.getElementById('gpFid'), gpScriptEl=document.getElementById('gpScript'), gpPropEl=document.getElementById('gpProp'), gpValEl=document.getElementById('gpVal');
+    if (!gpEspEl || !gpFidEl || !gpScriptEl || !gpPropEl || !gpValEl) { console.error('[Example Plugin] doSetProp: missing input elements'); return; }
+    var esp=gpEspEl.value.trim(), fid=gpFidEl.value.trim();
+    var scr=gpScriptEl.value.trim(), prp=gpPropEl.value.trim();
+    var raw=gpValEl.value.trim(), v=parseFloat(raw);
+    if (!esp||!fid||!scr||!prp||raw===''||isNaN(v)) { lg('po','prisma→','setProperty: missing/invalid fields'); return; }
+    if (!window.prisma) { lg('po','prisma→','window.prisma not available'); return; }
+    lg('po','prisma→','setProperty("'+esp+'","'+fid+'","'+scr+'","'+prp+'",'+v+')');
+    window.prisma.setProperty(esp,fid,scr,prp,v);
+}
+
 
 window.init = function() {
     var paBadge = document.getElementById('paBadge');

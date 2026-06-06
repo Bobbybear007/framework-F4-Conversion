@@ -560,11 +560,15 @@ JSListenerCallback (Ultralight thread — dispatch RE:: work):
 - `await prisma.getGlobal(esp, formId)` — Read a `TESGlobal` form value
 - `await prisma.getProperty(esp, formId, scriptName, propertyName)` — Read an `Auto` property from a Papyrus script
 
-### Known Limitations
+### Property Writes and Globals
 
-**Property writes are not supported.** Papyrus scripts finalize their property values at initialization. After that, F4SE cannot modify them from outside the Papyrus VM. This is a fundamental engine limitation, not a PrismaUI limitation.
+Both reads and writes are fully supported for both globals and properties:
+- `await prisma.setGlobal(esp, formId, value)` — Write a `TESGlobal` float value
+- `await prisma.setProperty(esp, formId, scriptName, propertyName, value)` — Write a float, int, or bool property to the script instance attached to the form.
 
-**Workaround:** Use `TESGlobal` variables instead of properties. Globals can be read and written at runtime. Alternatively, if you need to modify script state, do it from C++ via `F4SE::GetTaskInterface()->AddTask()` and the Papyrus VM scripting interface.
+**Under the Hood:** Writing to properties looks up the active script instance(s) attached to the form's handle in the Papyrus VM, finds the backing variable by name, and updates it directly on the game thread.
+
+**Callbacks/Events Limitation:** Because updating a property variable directly from F4SE/C++ does not run any Papyrus VM instructions (like a custom property `Set()` block in Papyrus), the Papyrus script will not be automatically notified of the change unless it polls the property value or unless another event is triggered. For workflows that require immediate script execution when a setting changes, write to a global or property, and have the Papyrus script poll it periodically (using `RegisterForSingleUpdate`), or use MCM actions.
 
 ### Return Values
 
