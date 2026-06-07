@@ -39,12 +39,12 @@ if not "!GITHUB_VERSION!"=="error" (
 )
 
 echo.
-if exist "..\build\windows\x64\release\PrismaUI_F4.dll" (
-    if exist "build\windows\x64\release\PrismaUI-F4-Example.dll" (
-        echo Checking PrismaUI_F4 framework for updates...
+if exist "%~dp0build\windows\x64\release\PrismaUI-F4-Example.dll" (
+    if exist "%~dp0build\windows\x64\release\PrismaUI-F4-Example.dll" (
+        echo Checking for existing build...
 
-        for %%F in (build\windows\x64\release\PrismaUI-F4-Example.dll) do set PLUGIN_TIME=%%~tF
-        for %%F in (..\build\windows\x64\release\PrismaUI_F4.dll) do set FRAMEWORK_TIME=%%~tF
+        for %%F in ("%~dp0build\windows\x64\release\PrismaUI-F4-Example.dll") do set PLUGIN_TIME=%%~tF
+        set FRAMEWORK_TIME=!PLUGIN_TIME!
 
         if "!FRAMEWORK_TIME!" gtr "!PLUGIN_TIME!" (
             echo.
@@ -69,9 +69,9 @@ echo STEP 1: Building PrismaUI-F4-Example...
 echo ========================================
 echo.
 echo Building (single DLL - supports OG + NG + GOG)...
-cd /d "%~dp0.."
-xmake f -c
-xmake
+cd /d "%~dp0"
+xmake f -c -P .
+xmake -P .
 if errorlevel 1 (
     echo.
     echo ERROR: Build failed
@@ -126,12 +126,12 @@ if errorlevel 1 (
 )
 
 echo Deploying view files...
-if not exist "example-f4se-plugin\view\index.html" (
-    echo ERROR: View files not found at example-f4se-plugin\view\
+if not exist "view\index.html" (
+    echo ERROR: View files not found at view\index.html
     pause
     exit /b 1
 )
-copy /Y "example-f4se-plugin\view\index.html" "!DEPLOY_PATH!\PrismaUI_F4\views\PrismaUI-F4-Example\index.html"
+copy /Y "view\index.html" "!DEPLOY_PATH!\PrismaUI_F4\views\PrismaUI-F4-Example\index.html"
 
 echo.
 echo ========================================
