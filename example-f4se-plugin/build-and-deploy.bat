@@ -7,6 +7,25 @@ echo   Complete Build and Deploy
 echo ========================================
 echo.
 
+REM --- Set up Visual Studio environment if not already done ---
+if not defined VCINSTALLDIR (
+    set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+    if not exist "!VSWHERE!" set "VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
+    if not exist "!VSWHERE!" (
+        echo ERROR: Cannot find vswhere.exe - please install Visual Studio 2022 with C++ workload.
+        pause
+        exit /b 1
+    )
+    for /f "tokens=*" %%I in ('"!VSWHERE!" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath') do set "VS_PATH=%%I"
+    if not defined VS_PATH (
+        echo ERROR: No Visual Studio installation with C++ tools found.
+        pause
+        exit /b 1
+    )
+    call "!VS_PATH!\VC\Auxiliary\Build\vcvars64.bat" >nul 2>&1
+    echo Visual Studio environment initialized.
+)
+
 echo Checking GitHub for framework updates...
 set GITHUB_VERSION=error
 where pwsh >nul 2>&1 && (
