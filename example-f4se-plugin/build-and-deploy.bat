@@ -8,7 +8,14 @@ echo ========================================
 echo.
 
 echo Checking GitHub for framework updates...
-for /f "tokens=*" %%A in ('powershell -Command "try { $resp = Invoke-RestMethod -Uri 'https://api.github.com/repos/NomadsReach/framework-F4-Conversion/releases/latest' -ErrorAction Stop; Write-Output $resp.tag_name } catch { Write-Output 'error' }"') do set GITHUB_VERSION=%%A
+set GITHUB_VERSION=error
+where pwsh >nul 2>&1 && (
+    for /f "tokens=*" %%A in ('pwsh -Command "try { $resp = Invoke-RestMethod -Uri 'https://api.github.com/repos/NomadsReach/framework-F4-Conversion/releases/latest' -ErrorAction Stop; Write-Output $resp.tag_name } catch { Write-Output 'error' }"') do set GITHUB_VERSION=%%A
+) || (
+    where powershell >nul 2>&1 && (
+        for /f "tokens=*" %%A in ('powershell -Command "try { $resp = Invoke-RestMethod -Uri 'https://api.github.com/repos/NomadsReach/framework-F4-Conversion/releases/latest' -ErrorAction Stop; Write-Output $resp.tag_name } catch { Write-Output 'error' }"') do set GITHUB_VERSION=%%A
+    )
+)
 
 if not "!GITHUB_VERSION!"=="error" (
     if not "!GITHUB_VERSION!"=="" (
@@ -61,17 +68,7 @@ echo ========================================
 echo STEP 1: Building PrismaUI-F4-Example...
 echo ========================================
 echo.
-set /p TARGET_VER="Build for Old-Gen (OG) or Next-Gen (NG)? [OG/NG]: "
-if /i "!TARGET_VER!"=="OG" (
-    set PRISMA_TARGET=og
-    echo Patching Old-Gen CommonLibF4 template...
-    copy /Y "..\scripts\commonlibf4-plugin.cpp.in" "..\..\CommonLibF4\res\commonlibf4-plugin.cpp.in" >nul
-) else (
-    set PRISMA_TARGET=ng
-    echo Patching Next-Gen CommonLibF4 submodule template...
-    copy /Y "..\scripts\commonlibf4-plugin.cpp.in" "..\lib\commonlibf4\res\commonlibf4-plugin.cpp.in" >nul
-)
-echo Building for !TARGET_VER! ...
+echo Building (single DLL - supports OG + NG + GOG)...
 cd /d "%~dp0.."
 xmake f -c
 xmake
@@ -135,8 +132,6 @@ if not exist "example-f4se-plugin\view\index.html" (
     exit /b 1
 )
 copy /Y "example-f4se-plugin\view\index.html" "!DEPLOY_PATH!\PrismaUI_F4\views\PrismaUI-F4-Example\index.html"
-copy /Y "example-f4se-plugin\view\script.js" "!DEPLOY_PATH!\PrismaUI_F4\views\PrismaUI-F4-Example\script.js"
-copy /Y "example-f4se-plugin\view\style.css" "!DEPLOY_PATH!\PrismaUI_F4\views\PrismaUI-F4-Example\style.css"
 
 echo.
 echo ========================================
