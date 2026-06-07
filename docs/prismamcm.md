@@ -1,9 +1,9 @@
 ---
 title: 'PrismaMCM'
 ---
-# PrismaMCM — Mod Configuration Menu
+# PrismaMCM - Mod Configuration Menu
 
-PrismaMCM is a companion plugin that gives any mod a settings screen without requiring C++ code. You drop a `config.json` file into your mod's data folder and PrismaMCM renders the controls, reads current values, and writes changes back — directly to Papyrus auto-properties, TESGlobal forms, or INI files.
+PrismaMCM is a companion plugin that gives any mod a settings screen without requiring C++ code. You drop a `config.json` file into your mod's data folder and PrismaMCM renders the controls, reads current values, and writes changes back - directly to Papyrus auto-properties, TESGlobal forms, or INI files.
 
 **Requires:** PrismaUI_F4 + PrismaMCM both installed.
 
@@ -16,7 +16,7 @@ When a game is loaded, PrismaMCM scans `Data\MCM\Config\` for any subfolder cont
 Opening the MCM (default **F12**, or the button in the Pause menu):
 1. PrismaMCM re-reads all your current values live
 2. Displays them in the HTML interface
-3. When the player changes a control, PrismaMCM writes the new value back immediately — directly to the Papyrus VM property or TESGlobal, no restart required
+3. When the player changes a control, PrismaMCM writes the new value back immediately - directly to the Papyrus VM property or TESGlobal, no restart required
 
 ---
 
@@ -105,25 +105,25 @@ The subfolder name under `Config\` must match the `modName` field in your `confi
 
 ## Control types
 
-### `section` — visual divider with a heading
+### `section` - visual divider with a heading
 
 ```json
 { "type": "section", "text": "Combat Settings" }
 ```
 
-### `spacer` — blank space
+### `spacer` - blank space
 
 ```json
 { "type": "spacer", "numLines": 1 }
 ```
 
-### `text` — read-only label
+### `text` - read-only label
 
 ```json
 { "type": "text", "text": "Changes take effect immediately." }
 ```
 
-### `slider` — numeric range picker
+### `slider` - numeric range picker
 
 ```json
 {
@@ -142,7 +142,7 @@ The subfolder name under `Config\` must match the `modName` field in your `confi
 }
 ```
 
-### `switcher` — on/off toggle
+### `switcher` - on/off toggle
 
 ```json
 {
@@ -158,7 +158,7 @@ The subfolder name under `Config\` must match the `modName` field in your `confi
 }
 ```
 
-### `dropdown` — pick from a list
+### `dropdown` - pick from a list
 
 ```json
 {
@@ -176,7 +176,7 @@ The subfolder name under `Config\` must match the `modName` field in your `confi
 
 The stored value is the zero-based index of the selected option as a string (`"0"`, `"1"`, `"2"`, `"3"`).
 
-### `button` — trigger an action
+### `button` - trigger an action
 
 ```json
 {
@@ -198,7 +198,7 @@ The stored value is the zero-based index of the selected option as a string (`"0
 
 ---
 
-## `valueOptions` — source types
+## `valueOptions` - source types
 
 Every control that stores a value needs a `valueOptions` block. The `sourceType` field controls where the value is read from and written to.
 
@@ -219,12 +219,12 @@ Reads and writes a **Papyrus auto-property** attached to a script on a form.
 
 | Field | Description |
 |---|---|
-| `sourceForm` | `"Plugin.esp|LocalFormID"` — the local (un-merged) form ID in hexadecimal. The form must have a script attached that declares the property. |
+| `sourceForm` | `"Plugin.esp|LocalFormID"` - the local (un-merged) form ID in hexadecimal. The form must have a script attached that declares the property. |
 | `propertyName` | The exact name of the Papyrus `Auto` property on the script. Case-sensitive. |
 
 **`sourceForm` local ID explained:**
 
-If your quest form is `0x00000800` in xEdit (the `00` file prefix stripped, leaving `000800`), write it as `"MyMod.esp|800"`. Use the last 3 hex digits for normal ESPs — do not include the file index byte.
+If your quest form is `0x00000800` in xEdit (the `00` file prefix stripped, leaving `000800`), write it as `"MyMod.esp|800"`. Use the last 3 hex digits for normal ESPs - do not include the file index byte.
 
 **Requirement:** The form at `sourceForm` must have a script attached to it in-game with the property already declared. A Quest form is the most reliable choice since it persists across cell changes.
 
@@ -276,7 +276,7 @@ float Property SprintSpeed = 1.0 Auto
 bool  Property HardcoreMode = false Auto
 int   Property Difficulty   = 1 Auto
 
-; Papyrus reads the current values whenever it needs them —
+; Papyrus reads the current values whenever it needs them -
 ; no event required, PrismaMCM has already updated them.
 Function ApplySettings()
     Game.SetGameSettingFloat("fMoveSprintMult", SprintSpeed)
@@ -294,7 +294,7 @@ float diff = MyDifficultyGlobal.GetValue()
 
 ### Detecting when the MCM closes
 
-PrismaMCM is not a Scaleform menu, so `RegisterForMenuOpenCloseEvent("PrismaMCM")` will not fire. The simplest pattern is to read your properties at the natural points in your script flow — on game load, on combat start, on cell change — rather than trying to react to the MCM closing.
+PrismaMCM is not a Scaleform menu, so `RegisterForMenuOpenCloseEvent("PrismaMCM")` will not fire. The simplest pattern is to read your properties at the natural points in your script flow - on game load, on combat start, on cell change - rather than trying to react to the MCM closing.
 
 For settings that must take effect the moment they change (e.g., adjusting a game setting float), use `GlobalValue` and poll the global in a recurring timer:
 
@@ -378,7 +378,7 @@ The value is a BS_BUTTON_CODE (same as `DIK_*` scan codes). Common values:
 | Insert | `0x52` |
 | Delete | `0x53` |
 
-The MCM button also appears on the vanilla **Pause menu** — no hotkey needed for keyboard-free navigation.
+The MCM button also appears on the vanilla **Pause menu** - no hotkey needed for keyboard-free navigation.
 
 ---
 
@@ -412,7 +412,7 @@ By default, all mods appear in an UNCATEGORIZED section. To group them:
 ```json
 {
   "modName": "FallenWorldAI",
-  "displayName": "Fallen World — AI Settings",
+  "displayName": "Fallen World - AI Settings",
 
   "pages": [
     {

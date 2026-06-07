@@ -1,4 +1,4 @@
-# API Reference — PrismaUI_F4
+# API Reference - PrismaUI_F4
 
 ## Overview
 
@@ -61,7 +61,7 @@ typedef void (*ConsoleMessageCallback)(
 );
 ```
 
-**Threading:** `OnDomReadyCallback` is invoked on the main game thread (dispatched via `F4SE::GetTaskInterface()->AddTask`). `JSListenerCallback` fires on the **Ultralight render thread** — see [Threading Warning](#threading-warning-js-listener-callbacks) below.
+**Threading:** `OnDomReadyCallback` is invoked on the main game thread (dispatched via `F4SE::GetTaskInterface()->AddTask`). `JSListenerCallback` fires on the **Ultralight render thread** - see [Threading Warning](#threading-warning-js-listener-callbacks) below.
 
 ---
 
@@ -73,13 +73,13 @@ typedef void (*ConsoleMessageCallback)(
 | `IVPrismaUI2` | V2 | `RegisterConsoleCallback` |
 | `IVPrismaUI3` | V3 | `RegisterTranslations` |
 
-Always request the highest version you need. If the installed PrismaUI_F4 is older than your requested version, `RequestPluginAPI` returns `nullptr` — handle this gracefully. V3 is the current recommended version.
+Always request the highest version you need. If the installed PrismaUI_F4 is older than your requested version, `RequestPluginAPI` returns `nullptr` - handle this gracefully. V3 is the current recommended version.
 
 ```cpp
-// Recommended — request V3
+// Recommended - request V3
 auto* api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI3>();
 if (!api) {
-    logger::error("PrismaUI V3 not available — update PrismaUI_F4");
+    logger::error("PrismaUI V3 not available - update PrismaUI_F4");
     return;
 }
 
@@ -109,16 +109,16 @@ Locates `PrismaUI_F4.dll` in the current process via `GetModuleHandleW`, calls i
 
 `JSListenerCallback` functions registered via `RegisterJSListener` fire on the **Ultralight render thread**, not the game thread.
 
-**You must not access CommonLibF4 game objects (`RE::*`) directly from a JS listener callback.** Doing so causes undefined behavior — `GetSingleton()` calls may return null or corrupt data, and crashes will appear non-deterministic.
+**You must not access CommonLibF4 game objects (`RE::*`) directly from a JS listener callback.** Doing so causes undefined behavior - `GetSingleton()` calls may return null or corrupt data, and crashes will appear non-deterministic.
 
 **Always dispatch game thread work via `AddTask`:**
 
 ```cpp
 api->RegisterJSListener(view, "requestGameData", [](const char* s) {
-    // WRONG — RE:: access on Ultralight thread:
+    // WRONG - RE:: access on Ultralight thread:
     // auto* player = RE::PlayerCharacter::GetSingleton(); // crash
 
-    // CORRECT — capture and dispatch to game thread:
+    // CORRECT - capture and dispatch to game thread:
     std::string arg = s ? s : "";
     F4SE::GetTaskInterface()->AddTask([arg]() {
         auto* player = RE::PlayerCharacter::GetSingleton();
@@ -127,7 +127,7 @@ api->RegisterJSListener(view, "requestGameData", [](const char* s) {
 });
 ```
 
-`InteropCall` and `Invoke` calls made from within `AddTask` (game thread) are safe — they marshal internally.
+`InteropCall` and `Invoke` calls made from within `AddTask` (game thread) are safe - they marshal internally.
 
 ---
 
@@ -149,7 +149,7 @@ Creates an HTML view and begins loading the specified file.
 | `htmlPath` | Path relative to `Data/PrismaUI_F4/views/`, e.g. `"mymenu.html"` or `"Interface/MyPlugin/page.html"`. |
 | `onDomReadyCallback` | Optional. Called once on the **main game thread** when the DOM is fully parsed. Safe to call `RegisterJSListener` and `Invoke` here. |
 
-**Returns** a non-zero `PrismaView` handle on success. The view starts **hidden** — call `Show(view)` when you want it visible.
+**Returns** a non-zero `PrismaView` handle on success. The view starts **hidden** - call `Show(view)` when you want it visible.
 
 **Thread safety:** Call from the main thread (inside an F4SE message handler or `AddTask`).
 
@@ -182,7 +182,7 @@ api->Invoke(view, "document.getElementById('hp').textContent", [](const char* va
 
 **Encoding:** Auto-converts ANSI game strings to UTF-8.
 
-**Performance:** Higher overhead than `InteropCall` — posts to the Ultralight thread and waits for a round-trip. Use for one-shots and reads, not high-frequency calls.
+**Performance:** Higher overhead than `InteropCall` - posts to the Ultralight thread and waits for a round-trip. Use for one-shots and reads, not high-frequency calls.
 
 ---
 
@@ -234,16 +234,16 @@ Exposes a C++ callback to JavaScript. After registration, calling `window.functi
 
 **Example:**
 ```cpp
-// C++ — register in OnDomReady
+// C++ - register in OnDomReady
 api->RegisterJSListener(view, "onCloseRequest", [](const char* /*arg*/) {
-    // No RE:: access here — safe, this is just UI state
+    // No RE:: access here - safe, this is just UI state
     F4SE::GetTaskInterface()->AddTask([]() {
         g_api->Unfocus(g_view);
         g_api->Hide(g_view);
     });
 });
 
-// JS — call from the page
+// JS - call from the page
 onCloseRequest();
 ```
 
@@ -274,7 +274,7 @@ Gives input focus to the view, routing keyboard and mouse events to the HTML pag
 | Parameter | Description |
 |-----------|-------------|
 | `pauseGame` | If `true`, sets game time scale to 0. Restored on `Unfocus`. Use for menus that need exclusive player attention. |
-| `disableFocusMenu` | If `false` (default), PrismaUI shows a Scaleform FocusMenu overlay that manages the cursor and intercepts ESC to unfocus. If `true`, the overlay is suppressed — keyboard events reach the HTML `keydown` handler directly and the game's existing cursor (e.g. PauseMenu cursor) remains active. |
+| `disableFocusMenu` | If `false` (default), PrismaUI shows a Scaleform FocusMenu overlay that manages the cursor and intercepts ESC to unfocus. If `true`, the overlay is suppressed - keyboard events reach the HTML `keydown` handler directly and the game's existing cursor (e.g. PauseMenu cursor) remains active. |
 
 **When to use `disableFocusMenu=true`:** When your view opens on top of an existing game menu that already shows a cursor (e.g. the PauseMenu). With `false`, the FocusMenu overlay intercepts ESC before your JS sees it and may conflict with the existing cursor. With `true`, your JS `keydown` handler is responsible for closing the view on ESC.
 
@@ -362,7 +362,7 @@ Returns `true` if the view handle is live and backed by a real Ultralight view. 
 virtual void Destroy(PrismaView view) noexcept = 0;
 ```
 
-Tears down the view completely. The handle becomes invalid. Rarely needed — views are typically kept alive for the session.
+Tears down the view completely. The handle becomes invalid. Rarely needed - views are typically kept alive for the session.
 
 ---
 
@@ -457,7 +457,7 @@ virtual void RegisterConsoleCallback(
 
 Receives all `console.log/warn/error/debug/info` calls from the view's JS context. Pass `nullptr` to unregister. Callback fires on the **main game thread**.
 
-Always register this during development — JS errors are otherwise silent.
+Always register this during development - JS errors are otherwise silent.
 
 ```cpp
 api->RegisterConsoleCallback(view,
@@ -541,7 +541,7 @@ Toggle (key / event):
     g_api->Unfocus(g_view)
     g_api->Hide(g_view)
 
-JSListenerCallback (Ultralight thread — dispatch RE:: work):
+JSListenerCallback (Ultralight thread - dispatch RE:: work):
   F4SE::GetTaskInterface()->AddTask([capture]() {
       // RE:: access here is safe
       g_api->InteropCall(g_view, "result", data.c_str());
@@ -557,14 +557,14 @@ JSListenerCallback (Ultralight thread — dispatch RE:: work):
 `window.prisma` is automatically injected by PrismaUI_F4 into every HTML view. It provides read-only access to Papyrus globals and script properties without requiring C++ code in your plugin.
 
 **Available methods:**
-- `await prisma.getGlobal(esp, formId)` — Read a `TESGlobal` form value
-- `await prisma.getProperty(esp, formId, scriptName, propertyName)` — Read an `Auto` property from a Papyrus script
+- `await prisma.getGlobal(esp, formId)` - Read a `TESGlobal` form value
+- `await prisma.getProperty(esp, formId, scriptName, propertyName)` - Read an `Auto` property from a Papyrus script
 
 ### Property Writes and Globals
 
 Both reads and writes are fully supported for both globals and properties:
-- `await prisma.setGlobal(esp, formId, value)` — Write a `TESGlobal` float value
-- `await prisma.setProperty(esp, formId, scriptName, propertyName, value)` — Write a float, int, or bool property to the script instance attached to the form.
+- `await prisma.setGlobal(esp, formId, value)` - Write a `TESGlobal` float value
+- `await prisma.setProperty(esp, formId, scriptName, propertyName, value)` - Write a float, int, or bool property to the script instance attached to the form.
 
 **Under the Hood:** Writing to properties looks up the active script instance(s) attached to the form's handle in the Papyrus VM, finds the backing variable by name, and updates it directly on the game thread.
 
@@ -575,7 +575,7 @@ Both reads and writes are fully supported for both globals and properties:
 Both read methods return **Promises** and handle errors gracefully:
 - Returns a `number` on success (including 0.0, which is a valid result)
 - Returns `null` if the form/plugin is not loaded, form doesn't exist, or script/property name mismatch
-- Never throws — always guard with `if (val === null)`
+- Never throws - always guard with `if (val === null)`
 
 ### Example
 
@@ -597,4 +597,4 @@ if (propVal !== null && propVal !== undefined) {
 
 ### Timing
 
-`window.prisma` is available immediately — no wait needed. However, `getProperty` calls may return `null` if the Papyrus VM is not yet ready (e.g., if called before `kPostLoadGame`). For best results, call property reads after the game has finished loading.
+`window.prisma` is available immediately - no wait needed. However, `getProperty` calls may return `null` if the Papyrus VM is not yet ready (e.g., if called before `kPostLoadGame`). For best results, call property reads after the game has finished loading.

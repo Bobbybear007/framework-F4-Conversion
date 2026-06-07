@@ -2,7 +2,7 @@
 
 ## The Runtime
 
-Views are rendered by **Ultralight**, an embeddable WebKit-based browser engine. The WebKit version shipped with this framework is roughly equivalent to Safari ~2020 / Chrome ~80. It supports modern CSS and ES2020 JavaScript, but it is not a full browser — certain APIs that exist in Chrome or Firefox are absent or behave differently.
+Views are rendered by **Ultralight**, an embeddable WebKit-based browser engine. The WebKit version shipped with this framework is roughly equivalent to Safari ~2020 / Chrome ~80. It supports modern CSS and ES2020 JavaScript, but it is not a full browser - certain APIs that exist in Chrome or Firefox are absent or behave differently.
 
 When something doesn't work, check this document before assuming your HTML is wrong.
 
@@ -51,7 +51,7 @@ The framework loads views via `file:///` URIs resolved relative to `Data/PrismaU
 ### Always Guard Optional APIs
 
 ```javascript
-// WRONG — will throw ReferenceError and abort the entire script
+// WRONG - will throw ReferenceError and abort the entire script
 var observer = new IntersectionObserver(callback);
 
 // CORRECT
@@ -70,7 +70,7 @@ A `ReferenceError` at script load time aborts the rest of your JS. Always test f
 
 ## JavaScript Console Logging
 
-**Use `console.log()` — never `dbg()`, `print()`, or custom globals.**
+**Use `console.log()` - never `dbg()`, `print()`, or custom globals.**
 
 ```javascript
 console.log('info message');    // appears in C++ log as [JS LOG]
@@ -113,12 +113,12 @@ api->Invoke(view, script.c_str());
 
 Register a listener from C++ (do this inside your `OnDomReady` callback):
 
-> **Threading:** `JSListenerCallback` fires on the **Ultralight render thread**, not the game thread. Never access `RE::*` singletons directly inside a listener. Dispatch game thread work via `F4SE::GetTaskInterface()->AddTask`. See [api-reference.md — Threading Warning](api-reference.md#threading-warning-js-listener-callbacks).
+> **Threading:** `JSListenerCallback` fires on the **Ultralight render thread**, not the game thread. Never access `RE::*` singletons directly inside a listener. Dispatch game thread work via `F4SE::GetTaskInterface()->AddTask`. See [api-reference.md - Threading Warning](api-reference.md#threading-warning-js-listener-callbacks).
 
 ```cpp
 // C++
 api->RegisterJSListener(view, "requestClose", [](const char* /*arg*/) {
-    // Safe — no RE:: access, PrismaUI calls marshal internally
+    // Safe - no RE:: access, PrismaUI calls marshal internally
     api->Unfocus(view);
     api->Hide(view);
 });
@@ -134,7 +134,7 @@ api->RegisterJSListener(view, "onSettingChanged", [](const char* json) {
 ```
 
 ```javascript
-// JS — these are now global functions on window
+// JS - these are now global functions on window
 document.getElementById('closeBtn').addEventListener('click', function() {
   requestClose();
 });
@@ -149,7 +149,7 @@ document.getElementById('volumeSlider').addEventListener('input', function() {
 Always use JSON strings for structured data crossing the C++/JS boundary. Both sides parse and produce JSON:
 
 ```cpp
-// C++ — build JSON and push it
+// C++ - build JSON and push it
 nlohmann::json j;
 j["items"] = nlohmann::json::array();
 for (auto& item : inventory) {
@@ -159,7 +159,7 @@ api->InteropCall(view, "loadInventory", j.dump().c_str());
 ```
 
 ```javascript
-// JS — receive and render
+// JS - receive and render
 function loadInventory(jsonStr) {
   var data = JSON.parse(jsonStr);
   data.items.forEach(function(item) {
@@ -175,13 +175,13 @@ function loadInventory(jsonStr) {
 Views are always the full screen size. `100vw` and `100vh` equal the game's render resolution. Design your UI to work at 1920×1080 and test at 2560×1440 if possible. Use `min-width`, `max-width`, and centered containers rather than fixed pixel positions.
 
 ```css
-/* Good — centered container, responsive width */
+/* Good - centered container, responsive width */
 .panel {
   width: min(600px, 90vw);
   margin: 0 auto;
 }
 
-/* Risky — will look wrong at 4K */
+/* Risky - will look wrong at 4K */
 .panel {
   left: 660px;
   width: 600px;
@@ -219,7 +219,7 @@ body {
 }
 ```
 
-If you want to block mouse clicks from reaching the game (e.g., a full-screen overlay), set `pointer-events: auto` on a full-screen element. The focus system handles this at the engine level — when focused, all mouse events go to the view regardless.
+If you want to block mouse clicks from reaching the game (e.g., a full-screen overlay), set `pointer-events: auto` on a full-screen element. The focus system handles this at the engine level - when focused, all mouse events go to the view regardless.
 
 ---
 
@@ -232,7 +232,7 @@ System fonts available in the game process: `Courier New`, `Arial`, `Segoe UI`, 
 ## Performance Guidelines
 
 - **Avoid `document.querySelectorAll` in tight loops.** Cache element references.
-- **Batch DOM updates** — build HTML strings and set `innerHTML` once rather than appending many nodes individually.
+- **Batch DOM updates** - build HTML strings and set `innerHTML` once rather than appending many nodes individually.
 - **`requestAnimationFrame`** is available and works correctly for smooth animations.
 - **Heavy JS work** (sorting large arrays, string manipulation) is fine. The Ultralight thread is dedicated and won't block the game's render thread.
 - **Avoid creating and destroying many DOM nodes repeatedly.** Reuse and update existing nodes.
@@ -246,7 +246,7 @@ Register a `ConsoleMessageCallback` from C++ to see all `console.*` output in yo
 For DOM inspection, use the inspector:
 
 ```cpp
-// C++ — create and show inspector (development only, never ship this)
+// C++ - create and show inspector (development only, never ship this)
 api->CreateInspectorView(view);
 api->SetInspectorBounds(view, 10.0f, 10.0f, 900, 600);
 api->SetInspectorVisibility(view, true);
@@ -301,10 +301,10 @@ The inspector is the full WebKit DevTools. You can inspect the DOM, run JS in th
 
 The PrismaUI_F4 framework includes automated `build-and-deploy.bat` scripts that:
 
-1. **Check GitHub for framework updates** — Queries the latest release from https://github.com/NomadsReach/framework-F4-Conversion and alerts if a newer version is available
-2. **Verify source freshness** — Compares source file timestamps against the built DLL and prompts rebuild if source is newer
-3. **Auto-extract SDK** — Automatically copies the Ultralight SDK from the local cache if it's missing from the build output
-4. **Deploy all artifacts** — Copies DLL, libraries, resources, and assets to the target MO2 mod folder
+1. **Check GitHub for framework updates** - Queries the latest release from https://github.com/NomadsReach/framework-F4-Conversion and alerts if a newer version is available
+2. **Verify source freshness** - Compares source file timestamps against the built DLL and prompts rebuild if source is newer
+3. **Auto-extract SDK** - Automatically copies the Ultralight SDK from the local cache if it's missing from the build output
+4. **Deploy all artifacts** - Copies DLL, libraries, resources, and assets to the target MO2 mod folder
 
 **Framework build:** `E:\F4SE OG\Prisma\PrismaUI_F4 New Gen\build-and-deploy.bat`
 

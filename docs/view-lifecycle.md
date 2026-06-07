@@ -31,7 +31,7 @@ A PrismaUI view moves through these states:
      ▼
 [ready + hidden]
      │
-     │  Destroy()  (optional — rarely needed)
+     │  Destroy()  (optional - rarely needed)
      ▼
 [destroyed]
 ```
@@ -42,11 +42,11 @@ A PrismaUI view moves through these states:
 
 ```cpp
 PrismaView view = api->CreateView("page.html", OnDomReady);
-// View starts hidden — no Hide() call needed, but explicit is fine:
+// View starts hidden - no Hide() call needed, but explicit is fine:
 // api->Hide(view);
 ```
 
-`CreateView` is asynchronous — the HTML file is loaded on the Ultralight thread. Your `OnDomReady` callback fires on the **main game thread** (via `F4SE::GetTaskInterface()->AddTask`) after the DOM is parsed and all inline `<script>` blocks have executed.
+`CreateView` is asynchronous - the HTML file is loaded on the Ultralight thread. Your `OnDomReady` callback fires on the **main game thread** (via `F4SE::GetTaskInterface()->AddTask`) after the DOM is parsed and all inline `<script>` blocks have executed.
 
 **Do not call `Invoke` or `RegisterJSListener` before `OnDomReady` fires.** The JS context is not yet ready.
 
@@ -72,7 +72,7 @@ Guard with `g_view == 0` to avoid creating duplicates on multiple load events.
 ```cpp
 static void OnDomReady(PrismaView view)
 {
-    // Fires on the main game thread — safe for RE:: access and JS calls
+    // Fires on the main game thread - safe for RE:: access and JS calls
     g_api->RegisterJSListener(view, "onClose", OnClose);
     g_api->RegisterJSListener(view, "onDataRequest", OnDataRequest);
     g_api->Invoke(view, "init()");
@@ -93,7 +93,7 @@ The callback receives the view handle so one function can serve multiple views.
 
 ```cpp
 g_api->RegisterJSListener(view, "queryPlayer", [](const char* s) {
-    // WRONG — RE:: on Ultralight thread:
+    // WRONG - RE:: on Ultralight thread:
     // auto hp = RE::PlayerCharacter::GetSingleton()->GetActorValue(...);
 
     // CORRECT:
@@ -105,13 +105,13 @@ g_api->RegisterJSListener(view, "queryPlayer", [](const char* s) {
 });
 ```
 
-`OnDomReadyCallback` and `JSCallback` (from `Invoke`) are delivered on the game thread — no dispatch needed for those.
+`OnDomReadyCallback` and `JSCallback` (from `Invoke`) are delivered on the game thread - no dispatch needed for those.
 
 ---
 
 ## Show / Hide
 
-`Show` and `Hide` control compositing — whether the view's pixels are included in the D3D11 Present call. They are not the same as `Focus`/`Unfocus`.
+`Show` and `Hide` control compositing - whether the view's pixels are included in the D3D11 Present call. They are not the same as `Focus`/`Unfocus`.
 
 | Operation | What it does |
 |-----------|-------------|
@@ -143,7 +143,7 @@ static void Toggle()
 
 ### `pauseGame`
 
-When `true`, the game's time scale is set to zero — NPCs stop moving, timers pause. Restored automatically on `Unfocus`. Use for menus that require exclusive player attention (inventory, settings, terminal).
+When `true`, the game's time scale is set to zero - NPCs stop moving, timers pause. Restored automatically on `Unfocus`. Use for menus that require exclusive player attention (inventory, settings, terminal).
 
 When `false`, the game continues running while the UI is open. Use for overlays or menus opened from existing paused contexts (e.g. opening a sub-panel while PauseMenu is already open).
 
@@ -151,9 +151,9 @@ When `false`, the game continues running while the UI is open. Use for overlays 
 
 Controls whether PrismaUI's Scaleform FocusMenu overlay is shown:
 
-**`false` (default):** The FocusMenu overlay is active. It manages the game cursor and intercepts ESC to unfocus the view. Use this for standalone menus opened directly from gameplay — the overlay handles cursor visibility and ESC for you.
+**`false` (default):** The FocusMenu overlay is active. It manages the game cursor and intercepts ESC to unfocus the view. Use this for standalone menus opened directly from gameplay - the overlay handles cursor visibility and ESC for you.
 
-**`true`:** The FocusMenu overlay is suppressed. Keyboard events reach the HTML `keydown` handler directly. The game's existing cursor (if any) remains active. Use this when your view opens on top of an existing game menu that already shows a cursor — for example, a panel opened while PauseMenu is open. In this case your JS must handle ESC:
+**`true`:** The FocusMenu overlay is suppressed. Keyboard events reach the HTML `keydown` handler directly. The game's existing cursor (if any) remains active. Use this when your view opens on top of an existing game menu that already shows a cursor - for example, a panel opened while PauseMenu is open. In this case your JS must handle ESC:
 
 ```javascript
 document.addEventListener('keydown', e => {
@@ -188,7 +188,7 @@ api->SetOrder(popupView, 10);
 
 **Focus:** Only one view can have focus at a time. Calling `Focus` on a second view while the first is focused automatically unfocuses the first.
 
-**Performance:** Each active view costs GPU texture memory and Ultralight rendering time. Keep views hidden when not in use — rendering is skipped for hidden views.
+**Performance:** Each active view costs GPU texture memory and Ultralight rendering time. Keep views hidden when not in use - rendering is skipped for hidden views.
 
 ---
 
@@ -205,7 +205,7 @@ You do not need to implement recovery logic. If a view behaves strangely, check 
 The Ultralight inspector is a WebKit DevTools interface.
 
 ```cpp
-// Setup (development only — do not ship)
+// Setup (development only - do not ship)
 api->CreateInspectorView(view);
 api->SetInspectorBounds(view, 0.0f, 0.0f, 900, 550);
 
@@ -238,7 +238,7 @@ api->Destroy(view);
 view = 0;
 ```
 
-In normal usage, never destroy views — create them once on `kPostLoadGame` and keep them for the session.
+In normal usage, never destroy views - create them once on `kPostLoadGame` and keep them for the session.
 
 ---
 
@@ -256,10 +256,10 @@ api->SetScrollingPixelSize(view, 40);  // default is 28 px per tick
 
 The **PrismaUI-F4-Example** plugin demonstrates all of these patterns in a working plugin with four tabs:
 
-1. **Papyrus Bridge** — Reading globals and quest properties without C++ code
-2. **C++ Bridge** — Invoking JS from C++, and listening for JS callbacks
-3. **Event Log** — Debugging and tracing all JS↔C++ communication
-4. **Tutorial** — Comprehensive guide to all features
+1. **Papyrus Bridge** - Reading globals and quest properties without C++ code
+2. **C++ Bridge** - Invoking JS from C++, and listening for JS callbacks
+3. **Event Log** - Debugging and tracing all JS↔C++ communication
+4. **Tutorial** - Comprehensive guide to all features
 
 The example plugin is located in `E:\F4SE OG\Prisma\PrismaUI_F4 New Gen\example-f4se-plugin\` and demonstrates:
 - DOM ready callback registration

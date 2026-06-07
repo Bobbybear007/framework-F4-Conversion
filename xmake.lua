@@ -127,12 +127,16 @@ target("PrismaUI_F4")
 
         print("Distribution ready: dist/PrismaUI_F4_" .. ver)
 
-        -- Auto-deploy to MO2 mods folder if XSE_FO4_MODS_PATH is set
+        -- Auto-deploy to custom path if XSE_FO4_MODS_PATH is set
         local mods_path = os.getenv("XSE_FO4_MODS_PATH")
         if mods_path then
             local mod_root = path.join(mods_path, "PrismaUI_F4")
-            os.cp(target:targetfile(), path.join(mod_root, "F4SE", "Plugins"))
-            print("Deployed DLL to " .. mod_root)
+            local plugins_dir = path.join(mod_root, "F4SE", "Plugins")
+            os.mkdir(plugins_dir)  -- Ensure directory exists
+            -- Copy DLL with explicit .dll extension (target:filename() already has .dll)
+            local dll_dest = path.join(plugins_dir, target:filename())
+            os.cp(target:targetfile(), dll_dest)
+            print("Deployed DLL to " .. dll_dest)
         end
     end)
 

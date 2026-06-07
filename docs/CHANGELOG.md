@@ -5,7 +5,7 @@ title: 'Changelog'
 
 ## Version 1.6
 
-### Papyrus Bridge — `window.prisma`
+### Papyrus Bridge - `window.prisma`
 
 <details>
 <summary><b>💡 What is the Papyrus Bridge? (Click to expand)</b></summary>
@@ -49,7 +49,7 @@ prisma.setGlobal("MyMod.esp", "801", 3.0);
 
 </details>
 
-### Example Plugin — Full API Guide HTML
+### Example Plugin - Full API Guide HTML
 
 - Rewrote `example-f4se-plugin/view/index.html` from a basic demo into a 3-tab interactive guide:
   - **Papyrus Bridge tab:** Live `getGlobal`/`setGlobal`/`getProperty`/`setProperty` testing with inputs, result display, and null-return references.
@@ -85,14 +85,14 @@ Both the example plugin and the core `PrismaUI_F4.dll` have migrated from `cmake
 
 ### Security
 
-- **Network Sandbox:** Added an automatic network sandbox applied to all views across all API versions (V1–V4).
+- **Network Sandbox:** Added an automatic network sandbox applied to all views across all API versions (V1-V4).
 - **API Restrictions:** Outbound network APIs (`fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `Worker`, etc.) are now blocked in every view before page scripts execute and cannot be overridden.
 - **`CreateView` Restrictions:** Modified `CreateView` to reject external URLs (`http://`, `https://`). The system now exclusively accepts local paths under `Data/PrismaUI_F4/views/`.
 - **Navigation Restrictions:** Blocked `window.open()` and all forms of external navigation.
 - **Logging:** All blocked network or navigation attempts are now logged to `PrismaUI_F4.log`.
 
 > [!NOTE]
-> There are no changes to the public API. Plugins built against V1–V4 will receive this sandbox automatically with no code changes required.
+> There are no changes to the public API. Plugins built against V1-V4 will receive this sandbox automatically with no code changes required.
 
 ---
 

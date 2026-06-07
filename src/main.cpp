@@ -1,42 +1,181 @@
 #include "PCH.h"
+#include "API/API.h"
+#include "Hooks/Hooks.h"
+#include "Utils/DllLoader.h"
+#include "PrismaUI/NotificationSystem.h"
+#include <tlhelp32.h>
+
+static bool g_overlayDetected = false;
+static bool g_pluginDisabled = false;
+static std::string g_detectedOverlayName;
 
 namespace {
-	std::shared_ptr<spdlog::logger> log;
+    bool IsConflictingOverlayRunning() {
+        const char* conflicting_procs[] = {
+            "RTSS.exe",              // RivaTuner Statistics Server
+            "RTSSHooked.exe",        // RivaTuner hooked version
+            "RTSSHooksLoader64.exe", // RivaTuner background loader (even when window closed)
+            "MSIAfterburner.exe",    // MSI Afterburner
+            "OverdriveNTool.exe",    // AMD Overdrive
+        };
 
-	void InitializeLog() {
-		auto path = std::string("Data/F4SE/Plugins/PrismaUI_F4.log");
-		auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path, true);
-		auto logger_ptr = std::make_shared<spdlog::logger>("global log", std::move(sink));
-		log = logger_ptr;
-		log->set_level(spdlog::level::trace);
-		log->flush_on(spdlog::level::trace);
+        const char* friendly_names[] = {
+            "RivaTuner Statistics Server (RTSS.exe)",
+            "RivaTuner (RTSSHooked.exe)",
+            "RivaTuner Loader (RTSSHooksLoader64.exe) - close from system tray",
+            "MSI Afterburner (MSIAfterburner.exe)",
+            "AMD Overdrive (OverdriveNTool.exe)",
+        };
 
-		spdlog::register_logger(log);
-		spdlog::set_default_logger(log);
-	}
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (snapshot == INVALID_HANDLE_VALUE) return false;
+
+        PROCESSENTRY32 entry{};
+        entry.dwSize = sizeof(PROCESSENTRY32);
+
+        if (Process32First(snapshot, &entry)) {
+            do {
+                for (size_t i = 0; i < 5; ++i) {
+                    if (_stricmp(entry.szExeFile, conflicting_procs[i]) == 0) {
+                        logger::warn("[PrismaUI Overlay Detection] Found: {}", entry.szExeFile);
+                        g_detectedOverlayName = friendly_names[i];
+                        CloseHandle(snapshot);
+                        return true;
+                    }
+                }
+            } while (Process32Next(snapshot, &entry));
+        }
+
+        CloseHandle(snapshot);
+        return false;
+    }
+
+    void NotifyUserOverlayDetected() {
+        std::string message = "PrismaUI cannot run with this software active.\n\n";
+        message += "Detected: " + g_detectedOverlayName + "\n\n";
+        message += "This GPU monitoring software conflicts with Ultralight rendering.\n\n";
+        message += "To play:\n";
+        message += "1. Close " + g_detectedOverlayName + "\n";
+        message += "2. Restart Fallout 4\n\n";
+        message += "Fallout 4 will now close.";
+
+        MessageBoxA(
+            nullptr,
+            message.c_str(),
+            "PrismaUI - Overlay Conflict",
+            MB_OK | MB_ICONWARNING
+        );
+
+        // Kill the game process - user must close overlay and restart
+        std::exit(1);
+    }
 }
 
-extern "C" {
-	bool F4SEPlugin_Query(const F4SE::QueryInterface* a_f4se, F4SE::PluginInfo* a_info) {
-		InitializeLog();
+static void F4SEMessageHandler(F4SE::MessagingInterface::Message* message)
+{
+    if (message->type == F4SE::MessagingInterface::kGameDataReady) {
+        Hooks::D3DHooks::Install();
+    }
+}
 
-		if (a_f4se->IsEditor()) {
-			logger::critical("Loaded in editor, marking incompatible!");
-			return false;
-		}
+// F4SE plugin version data - required for the NG/AE loader to recognise the DLL.
+// This target links commonlibf4 directly (it does NOT use the commonlibf4.plugin
+// rule), so the version export is declared here rather than auto-generated.
+// One DLL serves OG + NG + AE (COMMONLIB_RUNTIMECOUNT=3).
+F4SE_PLUGIN_VERSION = []() noexcept {
+    F4SE::PluginVersionData v{};
+    v.PluginVersion({ 1, 0, 0, 0 });
+    v.PluginName("PrismaUI_F4");
+    v.AuthorName("PrismaUI");
+    v.UsesAddressLibrary(true);     // 1.11.137+ (AE) address library
+    v.UsesAddressLibraryNG(true);   // 1.10.980/984 (NG) address library
+    v.UsesSigScanning(false);
+    v.IsLayoutDependent(true);
+    v.IsLayoutDependentNG(true);
+    v.HasNoStructUse(false);
+    return v;
+}();
 
-		const auto ver = a_f4se->RuntimeVersion();
-		if (ver < F4SE::RUNTIME_1_10_162) {
-			logger::critical("Unsupported runtime version {}", ver);
-			return false;
-		}
+// F4SEPlugin_Query - used by the Old-Gen (1.10.163) loader, which predates the
+// version-data export above. Both are exported so one DLL loads on OG and NG.
+F4SE_PLUGIN_QUERY(const F4SE::QueryInterface* a_f4se, F4SE::PluginInfo* a_info)
+{
+    a_info->infoVersion = F4SE::PluginInfo::kVersion;
+    a_info->name = "PrismaUI_F4";
+    a_info->version = 1;
 
-		return true;
-	}
+    if (a_f4se->IsEditor()) {
+        return false;
+    }
+    return a_f4se->RuntimeVersion() >= F4SE::RUNTIME_1_10_162;
+}
 
-	bool F4SEPlugin_Load(const F4SE::LoadInterface* a_f4se) {
-		F4SE::Init(a_f4se);
-		logger::info("PrismaUI_F4 Framework loaded successfully");
-		return true;
-	}
-};
+// F4SE::Init() creates the log file automatically at:
+//   %USERPROFILE%\Documents\My Games\Fallout4\F4SE\PrismaUI_F4.log
+F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_intfc)
+{
+    F4SE::Init(a_intfc, F4SE::InitInfo{
+        .logName        = "PrismaUI_F4",
+        .trampoline     = true,
+        .trampolineSize = 1 << 10
+    });
+
+    g_overlayDetected = IsConflictingOverlayRunning();
+    if (g_overlayDetected) {
+        logger::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        logger::warn("[PrismaUI] Overlay detected - exiting before game launch");
+        logger::warn("Detected: {}", g_detectedOverlayName);
+        logger::warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        NotifyUserOverlayDetected();
+    }
+
+    const auto* messaging = F4SE::GetMessagingInterface();
+    if (!messaging) {
+        logger::critical("Failed to get F4SE messaging interface!");
+        return false;
+    }
+    messaging->RegisterListener(F4SEMessageHandler);
+
+    if (!PrismaUI::Utils::DllLoader::GetSingleton().LoadUltralightLibraries()) {
+        logger::critical("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        logger::critical("[PrismaUI CRITICAL] Failed to load Ultralight libraries!");
+        logger::critical("Required files missing from: Data/PrismaUI_F4/libs/");
+        logger::critical("  AppCore.dll, Ultralight.dll, UltralightCore.dll, WebCore.dll");
+        logger::critical("Also check Data/PrismaUI_F4/resources/: cacert.pem, icudt67l.dat");
+        logger::critical("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        return false;
+    }
+
+    logger::info("PrismaUI_F4 Framework loaded successfully");
+    return true;
+}
+
+// Exported entry point that every PrismaUI client plugin resolves via
+// GetProcAddress(GetModuleHandleW(L"PrismaUI_F4.dll"), "RequestPluginAPI").
+extern "C" __declspec(dllexport) void* F4SEAPI RequestPluginAPI(const PRISMA_UI_API::InterfaceVersion a_interfaceVersion)
+{
+    if (g_pluginDisabled) {
+        logger::warn("RequestPluginAPI: PrismaUI is disabled (GPU overlay detected)");
+        return nullptr;
+    }
+
+    auto api = PluginAPI::PrismaUIInterface::GetSingleton();
+
+    switch (a_interfaceVersion) {
+    case PRISMA_UI_API::InterfaceVersion::V1:
+        logger::info("RequestPluginAPI returned V1 interface");
+        return static_cast<PRISMA_UI_API::IVPrismaUI1*>(api);
+    case PRISMA_UI_API::InterfaceVersion::V2:
+        logger::info("RequestPluginAPI returned V2 interface");
+        return static_cast<PRISMA_UI_API::IVPrismaUI2*>(api);
+    case PRISMA_UI_API::InterfaceVersion::V3:
+        logger::info("RequestPluginAPI returned V3 interface");
+        return static_cast<PRISMA_UI_API::IVPrismaUI3*>(api);
+    case PRISMA_UI_API::InterfaceVersion::V4:
+        logger::info("RequestPluginAPI returned V4 interface");
+        return static_cast<PRISMA_UI_API::IVPrismaUI4*>(api);
+    default:
+        logger::info("RequestPluginAPI: unsupported interface version");
+        return nullptr;
+    }
+}

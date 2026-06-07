@@ -11,7 +11,7 @@ PrismaUI F4 is powered by **Ultralight**, an embeddable WebKit-based renderer. I
 
 **Video is not supported.** The `<video>` element and all video playback APIs are unavailable. Use animated GIF images as a replacement for looping animations.
 
-**Audio is not supported.** The Web Audio API and `<audio>` element do not function. Play sounds through F4SE instead — trigger audio from your C++ plugin in response to JavaScript callbacks.
+**Audio is not supported.** The Web Audio API and `<audio>` element do not function. Play sounds through F4SE instead - trigger audio from your C++ plugin in response to JavaScript callbacks.
 
 **WebGL is not supported.** Canvas 2D works, but `getContext('webgl')` and `getContext('webgl2')` return `null`.
 
@@ -50,13 +50,13 @@ If you use **TailwindCSS**, you must use **v3**. Tailwind v4 relies on browser f
 
 Each view has an internal operation queue with a hard limit of **100 pending operations**. Show, Hide, Focus, Unfocus, and similar calls each occupy one slot. If the queue fills up, further operations are silently dropped with an error in the F4SE log.
 
-In normal usage this limit is never reached. It becomes relevant only if you are calling Show/Hide/Focus in a tight loop faster than the Ultralight thread can process them — for example, toggling a view every frame. Throttle such calls or gate them behind state checks (`IsHidden`, `HasFocus`) to avoid queuing redundant operations.
+In normal usage this limit is never reached. It becomes relevant only if you are calling Show/Hide/Focus in a tight loop faster than the Ultralight thread can process them - for example, toggling a view every frame. Throttle such calls or gate them behind state checks (`IsHidden`, `HasFocus`) to avoid queuing redundant operations.
 
 ---
 
 ## Multiple Views
 
-The API supports multiple views per plugin. Each view has its own Ultralight context, D3D11 textures, and JS environment — they do not share state.
+The API supports multiple views per plugin. Each view has its own Ultralight context, D3D11 textures, and JS environment - they do not share state.
 
 Where possible, prefer a **single view** that manages its own routing and page state internally (React Router, Vue Router, etc.). Multiple views are fine for genuinely separate surfaces like a persistent HUD alongside a toggle menu, but avoid creating many views for screens that could be JS routes inside one page. Each view adds texture memory and CPU rendering overhead.
 
@@ -138,4 +138,4 @@ No code changes required. PrismaUI F4 automatically uses the file when a view is
 
 **Error 127** (`ERROR_PROC_NOT_FOUND`) means the DLL loaded but an exported function it expects doesn't exist in that version. This happens when you have Ultralight DLLs from an older PrismaUI_F4 install in `Data/PrismaUI_F4/libs/` and install a newer version of the framework without replacing them.
 
-**Fix:** Delete all files inside `Data/PrismaUI_F4/libs/` and redeploy the full PrismaUI_F4 package. Never mix DLL files from different PrismaUI_F4 versions — all four (`AppCore.dll`, `Ultralight.dll`, `UltralightCore.dll`, `WebCore.dll`) must come from the same release.
+**Fix:** Delete all files inside `Data/PrismaUI_F4/libs/` and redeploy the full PrismaUI_F4 package. Never mix DLL files from different PrismaUI_F4 versions - all four (`AppCore.dll`, `Ultralight.dll`, `UltralightCore.dll`, `WebCore.dll`) must come from the same release.

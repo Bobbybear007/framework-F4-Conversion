@@ -20,7 +20,7 @@ static bool                         g_visible = false;
 
 static void OnDomReady(PrismaView view) {
     g_api->RegisterJSListener(view, "requestClose", [](const char*) {
-        // No RE:: access — safe to call PrismaUI directly here
+        // No RE:: access - safe to call PrismaUI directly here
         g_visible = false;
         g_api->Unfocus(g_view);
         g_api->Hide(g_view);
@@ -102,12 +102,12 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg) {
 
 Push game data to the HTML page using `InteropCall` with JSON. Always call this from the game thread (inside `AddTask` or an F4SE message handler).
 
-**C++ — build and push inventory:**
+**C++ - build and push inventory:**
 ```cpp
 #include <nlohmann/json.hpp>  // or build JSON manually with sprintf
 
 static void PushInventoryData(PrismaView view) {
-    // Must be called on game thread — RE:: access requires it
+    // Must be called on game thread - RE:: access requires it
     auto* player = RE::PlayerCharacter::GetSingleton();
     if (!player) return;
 
@@ -127,7 +127,7 @@ static void PushInventoryData(PrismaView view) {
 }
 ```
 
-**HTML — receive and render:**
+**HTML - receive and render:**
 ```html
 <div id="list"></div>
 <script>
@@ -153,9 +153,9 @@ function escapeHtml(str) {
 
 ## 3. Receiving Events from JavaScript
 
-The JS → C++ direction uses `RegisterJSListener`. Callbacks fire on the **Ultralight render thread** — if you need `RE::` access, dispatch via `AddTask`.
+The JS → C++ direction uses `RegisterJSListener`. Callbacks fire on the **Ultralight render thread** - if you need `RE::` access, dispatch via `AddTask`.
 
-**C++ — register multiple listeners:**
+**C++ - register multiple listeners:**
 ```cpp
 static void OnDomReady(PrismaView view) {
     // Safe: no RE:: access, just UI state
@@ -165,7 +165,7 @@ static void OnDomReady(PrismaView view) {
         g_visible = false;
     });
 
-    // Safe: logging only — no RE::
+    // Safe: logging only - no RE::
     g_api->RegisterJSListener(view, "onSettingChanged", [](const char* json) {
         logger::info("Setting: {}", json);
         // Parse and apply without RE::, or dispatch to game thread:
@@ -187,7 +187,7 @@ static void OnDomReady(PrismaView view) {
 }
 ```
 
-**HTML — call from buttons and inputs:**
+**HTML - call from buttons and inputs:**
 ```javascript
 // Close
 document.getElementById('closeBtn').onclick = function() {
@@ -214,9 +214,9 @@ document.querySelectorAll('.item-row').forEach(function(el) {
 The full round-trip pattern: JS asks for data → C++ dispatches to game thread → reads RE:: → sends result back to JS.
 
 ```cpp
-// C++ — in OnDomReady
+// C++ - in OnDomReady
 g_api->RegisterJSListener(view, "requestPlayerStats", [](const char* /*arg*/) {
-    // Ultralight thread — dispatch to game thread for RE:: access
+    // Ultralight thread - dispatch to game thread for RE:: access
     F4SE::GetTaskInterface()->AddTask([]() {
         auto* player = RE::PlayerCharacter::GetSingleton();
         if (!player || !g_api || !g_api->IsValid(g_view)) return;
@@ -232,12 +232,12 @@ g_api->RegisterJSListener(view, "requestPlayerStats", [](const char* /*arg*/) {
 ```
 
 ```javascript
-// JS — trigger from a button
+// JS - trigger from a button
 document.getElementById('refreshBtn').onclick = function() {
   requestPlayerStats(); // fires C++ listener
 };
 
-// JS — receive result
+// JS - receive result
 function onPlayerStats(json) {
   var d = JSON.parse(json);
   document.getElementById('hp').textContent = d.hp;
@@ -256,13 +256,13 @@ function onPlayerStats(json) {
 g_api->Invoke(view,
     "document.getElementById('volumeSlider').value",
     [](const char* result) {
-        // Game thread — safe for RE:: access
+        // Game thread - safe for RE:: access
         int volume = std::atoi(result);
         logger::info("Volume is {}", volume);
     });
 ```
 
-For passing complex state back, have JS call a listener instead — it's cleaner than parsing Invoke results.
+For passing complex state back, have JS call a listener instead - it's cleaner than parsing Invoke results.
 
 ---
 
@@ -297,7 +297,7 @@ g_api->RegisterTranslations(g_view, "MyPlugin_F4");  // must match the filename 
 </script>
 ```
 
-Translations are re-injected automatically on each subsequent page load — call `RegisterTranslations` once per view.
+Translations are re-injected automatically on each subsequent page load - call `RegisterTranslations` once per view.
 
 ---
 
@@ -362,12 +362,12 @@ static void F4SEMessageHandler(F4SE::MessagingInterface::Message* msg) {
 ## 8. Z-Ordering Two Overlapping Views
 
 ```cpp
-// Background HUD — always visible, no focus, low z-order
+// Background HUD - always visible, no focus, low z-order
 g_hudView = g_api->CreateView("hud.html", nullptr);
 g_api->SetOrder(g_hudView, 0);
 g_api->Show(g_hudView);  // visible but unfocused
 
-// Popup menu — appears on top of HUD when opened
+// Popup menu - appears on top of HUD when opened
 g_menuView = g_api->CreateView("menu.html", OnMenuReady);
 g_api->SetOrder(g_menuView, 10);
 g_api->Hide(g_menuView);
@@ -435,7 +435,7 @@ Remove all `CreateInspectorView` calls before releasing your mod.
 ```cpp
 static void CreateViews() {
     if (!g_api) {
-        logger::error("PrismaUI not available — is PrismaUI_F4.dll installed and loaded?");
+        logger::error("PrismaUI not available - is PrismaUI_F4.dll installed and loaded?");
         return;
     }
     if (g_view != 0) return;  // already created
@@ -443,7 +443,7 @@ static void CreateViews() {
     g_view = g_api->CreateView("mymenu.html", OnDomReady);
 
     if (!g_api->IsValid(g_view)) {
-        logger::error("Created view is immediately invalid — check that mymenu.html exists in Data/PrismaUI_F4/views/");
+        logger::error("Created view is immediately invalid - check that mymenu.html exists in Data/PrismaUI_F4/views/");
         g_view = 0;
         return;
     }

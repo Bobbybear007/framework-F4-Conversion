@@ -1,6 +1,6 @@
 # PrismaUI_F4
 
-**PrismaUI_F4** is an F4SE plugin that embeds the [Ultralight](https://ultralig.ht/) WebKit renderer into Fallout 4. It lets mod authors create fully interactive HTML/CSS/JavaScript overlays — menus, HUDs, settings panels, terminals — without touching Scaleform or the game's native UI system.
+**PrismaUI_F4** is an F4SE plugin that embeds the [Ultralight](https://ultralig.ht/) WebKit renderer into Fallout 4. It lets mod authors create fully interactive HTML/CSS/JavaScript overlays - menus, HUDs, settings panels, terminals - without touching Scaleform or the game's native UI system.
 
 ## How It Works
 
@@ -29,7 +29,7 @@ Fallout 4 process
    ```cpp
    auto* api = PRISMA_UI_API::RequestPluginAPI<PRISMA_UI_API::IVPrismaUI2>();
    ```
-3. Create a view (starts visible — hide it immediately):
+3. Create a view (starts visible - hide it immediately):
    ```cpp
    PrismaView view = api->CreateView("mymenu.html", OnDomReady);
    api->Hide(view);  // views are visible by default
@@ -44,10 +44,10 @@ See [docs/getting-started.md](docs/getting-started.md) for the full walkthrough.
 | Document | Description |
 |---|---|
 | [docs/getting-started.md](docs/getting-started.md) | Full tutorial: project setup, xmake, first view, deploy |
-| [docs/api-reference.md](docs/api-reference.md) | Complete C++ API — every method with parameters and return values |
-| [docs/html-views.md](docs/html-views.md) | Writing HTML/CSS/JS for Ultralight — supported APIs, known gaps, JS↔C++ bridge |
+| [docs/api-reference.md](docs/api-reference.md) | Complete C++ API - every method with parameters and return values |
+| [docs/html-views.md](docs/html-views.md) | Writing HTML/CSS/JS for Ultralight - supported APIs, known gaps, JS↔C++ bridge |
 | [docs/view-lifecycle.md](docs/view-lifecycle.md) | View states, focus model, ordering, inspector |
-| [docs/examples.md](docs/examples.md) | Annotated working code — toggle menu, data push, JS events, multi-view |
+| [docs/examples.md](docs/examples.md) | Annotated working code - toggle menu, data push, JS events, multi-view |
 
 ## File Layout (installed)
 
@@ -95,3 +95,26 @@ To build and deploy the example plugin:
 - F4SE
 - C++23 compiler (MSVC 2022 recommended)
 - xmake 3.0+
+
+## Credits and License
+
+This project is a Fallout 4 (F4SE) conversion of the original **Prisma UI** framework
+by the Prisma UI team, used with their permission. The original SKSE/Skyrim framework
+lives at https://github.com/PrismaUI-SKSE/framework.
+
+This software is distributed under the **Prisma UI License** (see [LICENSE.md](LICENSE.md)).
+It is NOT MIT and NOT open source. In short:
+
+- You may use it for non-commercial or limited commercial use, subject to the revenue and
+  funding limits in the license.
+- You may study it and modify it for private use.
+- You may redistribute the original version only if this license is included without modification.
+- You may NOT publicly distribute a modified version without written permission from the author.
+
+### Ultralight dependency
+
+Prisma UI embeds the **Ultralight** SDK, a commercial, source-available renderer owned by
+Ultralight, Inc. Ultralight is NOT included in this repository and must be obtained separately
+from https://ultralig.ht. Ultralight has its own terms, including no reverse engineering,
+no static linking, and the same revenue and funding limits. Any binary release that ships the
+Ultralight DLLs must include Ultralight's LICENSE.txt, EULA.txt, and NOTICES file alongside them.

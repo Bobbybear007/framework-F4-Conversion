@@ -3,7 +3,7 @@ title: 'Papyrus Bridge'
 ---
 # Papyrus Bridge
 
-PrismaUI_F4 automatically injects `window.prisma` into every view before `OnDomReadyCallback` fires. Papyrus modders can read and write live game data directly from JavaScript — no C++ plugin required.
+PrismaUI_F4 automatically injects `window.prisma` into every view before `OnDomReadyCallback` fires. Papyrus modders can read and write live game data directly from JavaScript - no C++ plugin required.
 
 ---
 
@@ -32,7 +32,7 @@ Reads a `TESGlobal` form's float value.
 
 | Parameter | Type | Description |
 |---|---|---|
-| `esp` | `string` | Plugin filename including extension — `"MyMod.esp"` or `"MyMod.esl"` |
+| `esp` | `string` | Plugin filename including extension - `"MyMod.esp"` or `"MyMod.esl"` |
 | `formId` | `string` | Local hex form ID without the file-index byte: `"800"` = `0x00000800` in the plugin |
 
 **Returns:** `Promise<number | null>`
@@ -41,7 +41,7 @@ Reads a `TESGlobal` form's float value.
 
 ### `prisma.setGlobal(esp, formId, value)`
 
-Writes a `TESGlobal` form's float value. Fire-and-forget — returns `undefined`.
+Writes a `TESGlobal` form's float value. Fire-and-forget - returns `undefined`.
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -68,7 +68,7 @@ Reads a Papyrus `Auto` property on a script attached to a form.
 
 ### `prisma.setProperty(esp, formId, scriptName, propName, value)`
 
-Writes a Papyrus `Auto` property. Fire-and-forget — returns `undefined`. The value is coerced to the property's declared type (`float`, `int`, or `bool`) automatically.
+Writes a Papyrus `Auto` property. Fire-and-forget - returns `undefined`. The value is coerced to the property's declared type (`float`, `int`, or `bool`) automatically.
 
 | Parameter | Type | Description |
 |---|---|---|
@@ -76,13 +76,13 @@ Writes a Papyrus `Auto` property. Fire-and-forget — returns `undefined`. The v
 | `formId` | `string` | Local hex form ID |
 | `scriptName` | `string` | Papyrus script name |
 | `propName` | `string` | Property name |
-| `value` | `number \| boolean \| string` | New value — coerced to declared type |
+| `value` | `number \| boolean \| string` | New value - coerced to declared type |
 
 ---
 
 ## Form ID format
 
-`formId` is the **local** form ID — strip the file-index byte.
+`formId` is the **local** form ID - strip the file-index byte.
 
 | xEdit shows | Write as |
 |---|---|
@@ -101,7 +101,7 @@ Both read methods return `null` (never throw) when:
 - The form ID does not exist in that plugin
 - The form exists but is the wrong type (not `TESGlobal`, or script not attached)
 - The property name is not found or not declared `Auto`
-- The Papyrus VM is not yet ready — always call after `kPostLoadGame`
+- The Papyrus VM is not yet ready - always call after `kPostLoadGame`
 
 ```js
 const val = await prisma.getGlobal("MyMod.esp", "800");
@@ -137,7 +137,7 @@ bool  Property HardcoreMode = false Auto
 int   Property Difficulty   = 1     Auto
 ```
 
-Attach this script to a Quest form. Quest forms are the most reliable host — they persist across cell changes and the Papyrus VM always has them loaded.
+Attach this script to a Quest form. Quest forms are the most reliable host - they persist across cell changes and the Papyrus VM always has them loaded.
 
 **HTML view:**
 
@@ -165,12 +165,12 @@ Attach this script to a Quest form. Quest forms are the most reliable host — t
 
 ## Requirements
 
-- **Quest form host** — use a persistent Quest form, not a cell-local reference
-- **After `kPostLoadGame`** — the Papyrus VM is not ready before the game loads; settings menus opened in-game are always safe
-- **PrismaUI_F4 installed** — `window.prisma` is injected by the framework; without it the object is `undefined`
+- **Quest form host** - use a persistent Quest form, not a cell-local reference
+- **After `kPostLoadGame`** - the Papyrus VM is not ready before the game loads; settings menus opened in-game are always safe
+- **PrismaUI_F4 installed** - `window.prisma` is injected by the framework; without it the object is `undefined`
 
 ---
 
 ## Threading model
 
-JS calls to `window.prisma` fire on the Ultralight render thread. PrismaUI_F4 marshals all `RE::` game-data access to the game thread via `F4SE::GetTaskInterface()->AddTask` internally. Responses are delivered back to JS as Promise resolutions via `_prismaResponse`. This is transparent — from JS the API is just async functions.
+JS calls to `window.prisma` fire on the Ultralight render thread. PrismaUI_F4 marshals all `RE::` game-data access to the game thread via `F4SE::GetTaskInterface()->AddTask` internally. Responses are delivered back to JS as Promise resolutions via `_prismaResponse`. This is transparent - from JS the API is just async functions.

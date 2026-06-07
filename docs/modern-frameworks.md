@@ -11,8 +11,8 @@ You can build PrismaUI F4 views with React, Vue, Svelte, or any other frontend f
 
 When you use a modern framework, there is a specific ordering issue between F4SE sending data and your framework mounting components:
 
-1. F4SE calls `CreateView()` — the HTML file starts loading
-2. DOM becomes ready — `OnDomReadyCallback` fires on the C++ side
+1. F4SE calls `CreateView()` - the HTML file starts loading
+2. DOM becomes ready - `OnDomReadyCallback` fires on the C++ side
 3. **F4SE sends initial data** via `Invoke()` or `InteropCall()`
 4. **Your framework initializes** and mounts components
 5. Components register their event handlers inside lifecycle hooks
@@ -22,7 +22,7 @@ Steps 3 and 4 can arrive in the wrong order. If F4SE sends data before your Reac
 ### The common mistake
 
 ```jsx
-// Wrong — window.receiveData does not exist yet when F4SE calls it
+// Wrong - window.receiveData does not exist yet when F4SE calls it
 function MyComponent() {
   useEffect(() => {
     window.receiveData = (data) => {
@@ -50,7 +50,7 @@ src/
 
 ---
 
-## Step 1 — Create the Store and Register Window Functions
+## Step 1 - Create the Store and Register Window Functions
 
 ```typescript
 // src/store/gameStore.ts
@@ -98,7 +98,7 @@ console.log('[PrismaUI] F4SE bridge registered');
 
 ---
 
-## Step 2 — Import the Store Before React Renders
+## Step 2 - Import the Store Before React Renders
 
 ```tsx
 // src/main.tsx
@@ -119,7 +119,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 ---
 
-## Step 3 — Read from the Store in Components
+## Step 3 - Read from the Store in Components
 
 ```tsx
 // src/components/PlayerHUD.tsx
@@ -147,7 +147,7 @@ export function PlayerHUD() {
 
 ---
 
-## Step 4 — F4SE Side (C++)
+## Step 4 - F4SE Side (C++)
 
 Send data as soon as `OnDomReadyCallback` fires. By that point your JS bundle has already loaded and all `window.*` functions are registered.
 
@@ -170,7 +170,7 @@ static void OnDomReady(PrismaView view)
 
 ## Sending Data Back to F4SE
 
-Register JS listeners immediately after `CreateView` (before `OnDomReady` — this is safe, registration does not need the JS context). Call them from JavaScript by function name.
+Register JS listeners immediately after `CreateView` (before `OnDomReady` - this is safe, registration does not need the JS context). Call them from JavaScript by function name.
 
 ```cpp
 // Register right after CreateView, no need to wait for OnDomReady
@@ -238,10 +238,10 @@ declare global {
 }
 ```
 
-`window.t` and `window.L10N` are available before your framework initializes — they are injected at the `OnWindowObjectReady` stage, earlier than `DOMContentLoaded`. You can call `window.t('$KEY')` safely from module-level code, store initializers, and component render functions without any guards.
+`window.t` and `window.L10N` are available before your framework initializes - they are injected at the `OnWindowObjectReady` stage, earlier than `DOMContentLoaded`. You can call `window.t('$KEY')` safely from module-level code, store initializers, and component render functions without any guards.
 
 ```typescript
-// Safe at any point — translations are ready before JS runs
+// Safe at any point - translations are ready before JS runs
 const LABELS = {
   close:  window.t('$CLOSE'),
   title:  window.t('$MY_MENU_TITLE'),

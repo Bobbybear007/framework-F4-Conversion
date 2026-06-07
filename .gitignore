@@ -8,3 +8,4 @@ dist/
 *.pdb
 build_out.txt
 build_err.txt
+build.log

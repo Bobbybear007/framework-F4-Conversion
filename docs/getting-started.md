@@ -6,7 +6,7 @@ This guide walks you from an empty folder to a working F4SE plugin that opens an
 
 - **Visual Studio 2022** with the C++ Desktop workload
 - **xmake 3.0+**
-- **[CommonLibF4 (Dear-Modding-FO4 Fork)](https://github.com/Dear-Modding-FO4/CommonLibF4)** — The modern xmake-based fork of CommonLibF4. You only need to download/submodule this single library, which fully supports both **Old-Gen** and **Next-Gen** builds.
+- **[CommonLibF4 (Dear-Modding-FO4 Fork)](https://github.com/Dear-Modding-FO4/CommonLibF4)** - The modern xmake-based fork of CommonLibF4. You only need to download/submodule this single library, which fully supports both **Old-Gen** and **Next-Gen** builds.
 - **PrismaUI_F4** installed (`PrismaUI_F4.dll` + Ultralight libs in your MO2 mod)
 - **Fallout 4 + F4SE** (Old-Gen 1.10.163 or Next-Gen 1.10.984)
 
