@@ -26,6 +26,8 @@ set "PROJ_TARGET=PrismaUI_F4"
 set "DLL_NAME=PrismaUI_F4.dll"
 set "UL_BIN=%SCRIPT_DIR%build\ultralight-1.4.0\bin"
 set "UL_RES=%SCRIPT_DIR%build\ultralight-1.4.0\resources"
+set "UL_LIC=%SCRIPT_DIR%build\ultralight-1.4.0\license"
+set "PRISMA_LICENSE=%SCRIPT_DIR%LICENSE.md"
 set "ASSETS=%SCRIPT_DIR%assets"
 
 REM --- Mod root from argument or prompt ---
@@ -180,11 +182,21 @@ if exist "%ASSETS%\misc\cursor.png"  copy /Y "%ASSETS%\misc\cursor.png" "!FRAMEW
 if exist "%ASSETS%\views"            xcopy /Y /E /I "%ASSETS%\views\*" "!FRAMEWORK_DIR!\views\" >nul 2>&1
 if exist "%ASSETS%\icons"            xcopy /Y /E /I "%ASSETS%\icons\*" "!FRAMEWORK_DIR!\icons\" >nul 2>&1
 
+echo   - Licenses (Prisma UI + Ultralight)...
+if not exist "!FRAMEWORK_DIR!\licenses" mkdir "!FRAMEWORK_DIR!\licenses"
+if exist "%PRISMA_LICENSE%"     copy /Y "%PRISMA_LICENSE%"     "!FRAMEWORK_DIR!\licenses\PrismaUI-LICENSE.md" >nul 2>&1
+if exist "%PRISMA_LICENSE%"     copy /Y "%PRISMA_LICENSE%"     "!MOD_ROOT!\LICENSE.md" >nul 2>&1
+if exist "%UL_LIC%\LICENSE.txt" copy /Y "%UL_LIC%\LICENSE.txt" "!FRAMEWORK_DIR!\licenses\Ultralight-LICENSE.txt" >nul 2>&1
+if exist "%UL_LIC%\EULA.txt"    copy /Y "%UL_LIC%\EULA.txt"    "!FRAMEWORK_DIR!\licenses\Ultralight-EULA.txt" >nul 2>&1
+if exist "%UL_LIC%\NOTICES.md"  copy /Y "%UL_LIC%\NOTICES.md"  "!FRAMEWORK_DIR!\licenses\Ultralight-NOTICES.md" >nul 2>&1
+
 REM --- Final verification of the essential runtime files ---
 set "DEPLOY_OK=1"
 if not exist "!PLUGINS_DIR!\%DLL_NAME%"                set "DEPLOY_OK=0"
 if not exist "!FRAMEWORK_DIR!\libs\UltralightCore.dll" set "DEPLOY_OK=0"
 if not exist "!FRAMEWORK_DIR!\resources\icudt67l.dat"  set "DEPLOY_OK=0"
+if not exist "!FRAMEWORK_DIR!\licenses\PrismaUI-LICENSE.md"     set "DEPLOY_OK=0"
+if not exist "!FRAMEWORK_DIR!\licenses\Ultralight-LICENSE.txt"  set "DEPLOY_OK=0"
 
 if "!DEPLOY_OK!"=="0" (
     color 0C
@@ -202,6 +214,7 @@ echo Plugin:    !PLUGINS_DIR!\%DLL_NAME%  (!DLL_SIZE! bytes)
 echo Libs:      !FRAMEWORK_DIR!\libs\      (AppCore, Ultralight, UltralightCore, WebCore)
 echo Resources: !FRAMEWORK_DIR!\resources\ (cacert.pem, icudt67l.dat)
 echo Assets:    !FRAMEWORK_DIR!\misc, \views, \icons
+echo Licenses:  !FRAMEWORK_DIR!\licenses\ (PrismaUI + Ultralight LICENSE/EULA/NOTICES)
 echo.
 
 endlocal
