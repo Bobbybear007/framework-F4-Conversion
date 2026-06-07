@@ -127,11 +127,14 @@ if errorlevel 1 (
 
 echo Deploying view files...
 if not exist "view\index.html" (
-    echo ERROR: View files not found at view\index.html
+    echo ERROR: View files not found at view\
     pause
     exit /b 1
 )
-copy /Y "view\index.html" "!DEPLOY_PATH!\PrismaUI_F4\views\PrismaUI-F4-Example\index.html"
+xcopy /Y /I "view\*" "!DEPLOY_PATH!\PrismaUI_F4\views\PrismaUI-F4-Example\" >nul
+
+echo Deploying license...
+if exist "..\LICENSE.md" copy /Y "..\LICENSE.md" "!DEPLOY_PATH!\LICENSE.md" >nul
 
 echo.
 echo ========================================
