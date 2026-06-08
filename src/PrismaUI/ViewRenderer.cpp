@@ -222,6 +222,14 @@ namespace PrismaUI::ViewRenderer {
         }
 
         if (!PrismaUI::InputHandler::IsAnyInputCaptureActive()) {
+            auto ui = RE::UI::GetSingleton();
+            if (ui) {
+                auto cursorMenu = ui->GetMenu("CursorMenu");
+                if (cursorMenu && cursorMenu->uiMovie && !cursorMenu->uiMovie->GetVisible()) {
+                    cursorMenu->uiMovie->SetVisible(true);
+                    ui->RefreshCursor();
+                }
+            }
             return;
         }
 
