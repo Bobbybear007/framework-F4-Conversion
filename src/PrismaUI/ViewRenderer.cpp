@@ -258,7 +258,10 @@ namespace PrismaUI::ViewRenderer {
         DirectX::SimpleMath::Vector2 position(
             static_cast<float>(PrismaUI::InputHandler::GetLastCursorX()),
             static_cast<float>(PrismaUI::InputHandler::GetLastCursorY()));
-        spriteBatch->Draw(cursorTexture.Get(), position);
+
+        const auto hudColor = RE::HUDMenuUtils::GetGameplayHUDColor();
+        const DirectX::SimpleMath::Color tint(hudColor.r, hudColor.g, hudColor.b, 1.0f);
+        spriteBatch->Draw(cursorTexture.Get(), position, nullptr, tint);
 
         spriteBatch->End();
 
